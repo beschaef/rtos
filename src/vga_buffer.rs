@@ -1,14 +1,13 @@
 // #[allow(dead_code)] to supress the unsused warning for the values 16-255
 // #[derive(Debug, Clone, Copy)] enables copy semantic and make it printable
 // #[repr(u8)] variants stored as u8 (u4 would be enough, but rust has no u4)
-use volatile::Volatile;
 use core::fmt;
 use spin::Mutex;
+use volatile::Volatile;
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy)]
 #[repr(u8)]
-
 
 pub enum Color {
     Black = 0,

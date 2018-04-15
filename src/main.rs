@@ -2,7 +2,7 @@
 //!
 //! #![no_std] is used to disable the standard library
 //! #![no_main] is added to tell the rust compiler that we don't want to use
-//! the normal entry point chain. This also requires to remove the main 
+//! the normal entry point chain. This also requires to remove the main
 //! function, because there's nothing to call the main
 //!
 //! to build and link the Code on Linux use
@@ -14,7 +14,6 @@
 //! to build our programm without an underlaying OS use
 //! 'xargo build --target x86_64-rtos
 //!
-
 #![feature(lang_items)]
 #![no_std]
 #![no_main]
@@ -22,39 +21,65 @@
 
 #[macro_use]
 mod vga_buffer;
+mod memory;
 
-extern crate rlibc;
 extern crate volatile;
 #[macro_use]
 extern crate lazy_static;
+extern crate os_bootinfo;
 extern crate spin;
+//extern crate bootloader;
+
+use os_bootinfo::BootInfo;
 
 #[lang = "panic_fmt"]
 #[no_mangle]
 pub extern "C" fn rust_begin_panic(
-	_msg: core::fmt::Arguments,
-	_file: &'static str, 
-	_line: u32, 
-	_column: u32
+    msg: core::fmt::Arguments,
+    file: &'static str,
+    line: u32,
+    _column: u32,
 ) -> ! {
-	loop {}
+    println!("\n\nPANIC in {} at line {}:", file, line);
+    println!("    {}", msg);
+    loop {}
 }
 
 // this is the function for the entry point on Linux.
 // the "-> !"" means that the function is diverging, i.e. not allowed to ever return.
 // 0xb8000 is the address of the VGA buffer
 #[no_mangle]
-pub extern "C" fn _start() -> ! {
-	println!("Hello World{}", "!" );
+pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
+    boot_info
+        .check_version()
+        .expect("Bootinfo version do not match");
+    use memory::FrameAllocator;
 
-	loop {}
-}
+    for ele in boot_info.memory_map.iter() {
+        let region_type = ele.region_type;
+        let start_address = ele.range.start.start_address();
+        let end_address = ele.range.end.start_address();
+        let size = end_address - start_address;
+        println!(
+            "{:x?} start: {:x?} end: {:x?} size: {:x?}",
+            region_type,
+            start_address,
+            end_address,
+            size,
+        );
+    }
 
-// this is the function for the entry point on macOS.
-// the "-> !"" means that the function is diverging, i.e. not allowed to ever return.
-#[no_mangle]
-pub extern "C" fn main() -> ! {
+    let kernel_start = boot_info.memory_map[3].range.start.start_address().as_u64();
+    let kernel_end = boot_info.memory_map[3].range.end.start_address().as_u64();
+    let bootloader_start = boot_info.memory_map[2].range.start.start_address().as_u64();
+    let bootloader_end = boot_info.memory_map[2].range.end.start_address().as_u64();
+
+    let mut frame_allocator = memory::AreaFrameAllocator::new(
+        kernel_start as usize, kernel_end as usize, bootloader_start as usize,
+        bootloader_end as usize, &boot_info.memory_map);
+
+    for i in 0.. {
+        println!("{:?}", frame_allocator.allocate_frame());
+    }
     loop {}
 }
-
-
