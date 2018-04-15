@@ -10,6 +10,10 @@ impl Entry {
     pub fn set_unused(&mut self) {
         self.0 = 0;
     }
+
+    pub fn flags(&self) -> EntryFlags {
+        EntryFlags::from_bits_truncate(self.0)
+    }
 }
 
 bitflags! {
