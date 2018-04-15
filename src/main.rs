@@ -28,7 +28,8 @@ extern crate volatile;
 extern crate lazy_static;
 extern crate os_bootinfo;
 extern crate spin;
-//extern crate bootloader;
+#[macro_use]
+extern crate bitflags;
 
 use os_bootinfo::BootInfo;
 
