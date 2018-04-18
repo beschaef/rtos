@@ -58,8 +58,8 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
 
     for ele in boot_info.memory_map.iter() {
         let region_type = ele.region_type;
-        let start_address = ele.range.start.start_address();
-        let end_address = ele.range.end.start_address();
+        let start_address = ele.range.start_addr();
+        let end_address = ele.range.end_addr();
         let size = end_address - start_address;
         println!(
             "{:x?} start: {:x?} end: {:x?} size: {:x?}",
@@ -70,17 +70,16 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
         );
     }
 
-    let kernel_start = boot_info.memory_map[3].range.start.start_address().as_u64();
-    let kernel_end = boot_info.memory_map[3].range.end.start_address().as_u64();
-    let bootloader_start = boot_info.memory_map[2].range.start.start_address().as_u64();
-    let bootloader_end = boot_info.memory_map[2].range.end.start_address().as_u64();
+    let kernel_start = boot_info.memory_map[3].range.start_addr();
+    let kernel_end = boot_info.memory_map[3].range.end_addr();
+    let bootloader_start = boot_info.memory_map[2].range.start_addr();
+    let bootloader_end = boot_info.memory_map[2].range.end_addr();
 
     let mut frame_allocator = memory::AreaFrameAllocator::new(
         kernel_start as usize, kernel_end as usize, bootloader_start as usize,
         bootloader_end as usize, &boot_info.memory_map);
 
-    for i in 0.. {
-        println!("{:?}", frame_allocator.allocate_frame());
-    }
+    println!("{:?}", frame_allocator.allocate_frame());
+
     loop {}
 }

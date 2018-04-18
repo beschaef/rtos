@@ -16,6 +16,7 @@ pub struct AreaFrameAllocator {
 impl FrameAllocator for AreaFrameAllocator {
     fn allocate_frame(&mut self) -> Option<Frame> {
         // in `allocate_frame` in `impl FrameAllocator for AreaFrameAllocator`
+        println!("{:x?}", Some(self.current_area));
 
         if let Some(area) = Some(self.current_area) {
             // "Clone" the frame to return it if it's free. Frame doesn't
@@ -24,8 +25,8 @@ impl FrameAllocator for AreaFrameAllocator {
 
             // the last frame of the current area
             let current_area_last_frame = {
-                let length = area.range.end.start_address().as_u64() - area.range.start.start_address().as_u64();
-                let address = area.range.start.start_address().as_u64() + length -1;
+                let length = area.range.end_addr() - area.range.start_addr();
+                let address = area.range.start_addr() + length -1;
                 Frame::containing_address(address as usize)
             };
 
@@ -79,13 +80,13 @@ impl AreaFrameAllocator {
 
     fn choose_next_area(&mut self) {
         self.current_area = *self.areas.iter().clone().filter(|area| {
-            let length = area.range.end.start_address().as_u64() - area.range.start.start_address().as_u64();
-            let address = area.range.start.start_address().as_u64() + length -1;
+            let length = area.range.end_addr() - area.range.start_addr();
+            let address = area.range.start_addr() + length -1;
             Frame::containing_address(address as usize) >= self.next_free_frame
-        }).min_by_key(|area| area.range.start.start_address().as_u64()).unwrap();
+        }).min_by_key(|area| area.range.start_addr()).unwrap();
 
         if let Some(area) = Some(self.current_area) {
-            let start_frame = Frame::containing_address(area.range.start.start_address().as_u64() as usize);
+            let start_frame = Frame::containing_address(area.range.start_addr() as usize);
             if self.next_free_frame < start_frame {
                 self.next_free_frame = start_frame;
             }
