@@ -20,12 +20,14 @@ impl FrameAllocator for AreaFrameAllocator {
         if let Some(area) = self.current_area {
             // "Clone" the frame to return it if it's free. Frame doesn't
             // implement Clone, but we can construct an identical frame.
-            let frame = Frame{ number: self.next_free_frame.number };
+            let frame = Frame {
+                number: self.next_free_frame.number,
+            };
 
             // the last frame of the current area
             let current_area_last_frame = {
                 let length = area.range.end_addr() - area.range.start_addr();
-                let address = area.range.start_addr() + length -1;
+                let address = area.range.start_addr() + length - 1;
                 Frame::containing_address(address as usize)
             };
 
@@ -35,12 +37,12 @@ impl FrameAllocator for AreaFrameAllocator {
             } else if frame >= self.kernel_start && frame <= self.kernel_end {
                 // `frame` is used by the kernel
                 self.next_free_frame = Frame {
-                    number: self.kernel_end.number + 1
+                    number: self.kernel_end.number + 1,
                 };
             } else if frame >= self.multiboot_start && frame <= self.multiboot_end {
                 // `frame` is used by the multiboot information structure
                 self.next_free_frame = Frame {
-                    number: self.multiboot_end.number + 1
+                    number: self.multiboot_end.number + 1,
                 };
             } else {
                 // frame is unused, increment `next_free_frame` and return it
@@ -60,10 +62,13 @@ impl FrameAllocator for AreaFrameAllocator {
 }
 
 impl AreaFrameAllocator {
-    pub fn new(kernel_start: usize, kernel_end: usize,
-               multiboot_start: usize, multiboot_end: usize,
-               memory_areas: &'static MemoryMap) -> AreaFrameAllocator
-    {
+    pub fn new(
+        kernel_start: usize,
+        kernel_end: usize,
+        multiboot_start: usize,
+        multiboot_end: usize,
+        memory_areas: &'static MemoryMap,
+    ) -> AreaFrameAllocator {
         let mut allocator = AreaFrameAllocator {
             next_free_frame: Frame::containing_address(0),
             current_area: None,
@@ -78,11 +83,15 @@ impl AreaFrameAllocator {
     }
 
     fn choose_next_area(&mut self) {
-        self.current_area = self.areas.iter().clone().filter(|area| {
-            let length = area.range.end_addr() - area.range.start_addr();
-            let address = area.range.start_addr() + length -1;
-            Frame::containing_address(address as usize) >= self.next_free_frame
-        }).min_by_key(|area| area.range.start_addr());
+        self.current_area = self.areas
+            .iter()
+            .clone()
+            .filter(|area| {
+                let length = area.range.end_addr() - area.range.start_addr();
+                let address = area.range.start_addr() + length - 1;
+                Frame::containing_address(address as usize) >= self.next_free_frame
+            })
+            .min_by_key(|area| area.range.start_addr());
 
         if let Some(area) = self.current_area {
             let start_frame = Frame::containing_address(area.range.start_addr() as usize);

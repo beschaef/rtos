@@ -63,10 +63,7 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
         let size = end_address - start_address;
         println!(
             "{:x?} start: {:x?} end: {:x?} size: {:x?}",
-            region_type,
-            start_address,
-            end_address,
-            size,
+            region_type, start_address, end_address, size,
         );
     }
 
@@ -76,8 +73,12 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
     let bootloader_end = boot_info.memory_map[2].range.end_addr();
 
     let mut frame_allocator = memory::AreaFrameAllocator::new(
-        kernel_start as usize, kernel_end as usize, bootloader_start as usize,
-        bootloader_end as usize, &boot_info.memory_map);
+        kernel_start as usize,
+        kernel_end as usize,
+        bootloader_start as usize,
+        bootloader_end as usize,
+        &boot_info.memory_map,
+    );
 
     for i in 0.. {
         if let None = frame_allocator.allocate_frame() {
