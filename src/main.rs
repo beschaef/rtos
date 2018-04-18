@@ -79,7 +79,13 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
         kernel_start as usize, kernel_end as usize, bootloader_start as usize,
         bootloader_end as usize, &boot_info.memory_map);
 
-    println!("{:?}", frame_allocator.allocate_frame());
+    for i in 0.. {
+        if let None = frame_allocator.allocate_frame() {
+            println!("allocated {} frames", i);
+            break;
+        }
+    }
+    //println!("{:?}", frame_allocator.allocate_frame());
 
     loop {}
 }

@@ -5,7 +5,7 @@ use os_bootinfo::{MemoryMap, MemoryRegion};
 
 pub struct AreaFrameAllocator {
     next_free_frame: Frame,
-    current_area: MemoryRegion,
+    current_area: Option<&'static MemoryRegion>,
     areas: &'static MemoryMap,
     kernel_start: Frame,
     kernel_end: Frame,
@@ -16,9 +16,8 @@ pub struct AreaFrameAllocator {
 impl FrameAllocator for AreaFrameAllocator {
     fn allocate_frame(&mut self) -> Option<Frame> {
         // in `allocate_frame` in `impl FrameAllocator for AreaFrameAllocator`
-        println!("{:x?}", Some(self.current_area));
 
-        if let Some(area) = Some(self.current_area) {
+        if let Some(area) = self.current_area {
             // "Clone" the frame to return it if it's free. Frame doesn't
             // implement Clone, but we can construct an identical frame.
             let frame = Frame{ number: self.next_free_frame.number };
@@ -67,7 +66,7 @@ impl AreaFrameAllocator {
     {
         let mut allocator = AreaFrameAllocator {
             next_free_frame: Frame::containing_address(0),
-            current_area: MemoryRegion::empty(),
+            current_area: None,
             areas: &memory_areas,
             kernel_start: Frame::containing_address(kernel_start),
             kernel_end: Frame::containing_address(kernel_end),
@@ -79,13 +78,13 @@ impl AreaFrameAllocator {
     }
 
     fn choose_next_area(&mut self) {
-        self.current_area = *self.areas.iter().clone().filter(|area| {
+        self.current_area = self.areas.iter().clone().filter(|area| {
             let length = area.range.end_addr() - area.range.start_addr();
             let address = area.range.start_addr() + length -1;
             Frame::containing_address(address as usize) >= self.next_free_frame
-        }).min_by_key(|area| area.range.start_addr()).unwrap();
+        }).min_by_key(|area| area.range.start_addr());
 
-        if let Some(area) = Some(self.current_area) {
+        if let Some(area) = self.current_area {
             let start_frame = Frame::containing_address(area.range.start_addr() as usize);
             if self.next_free_frame < start_frame {
                 self.next_free_frame = start_frame;
