@@ -3,6 +3,8 @@ use memory::Frame;
 pub use self::entry::*;
 use memory::FrameAllocator;
 use memory::paging::table::P4;
+use self::table::{Table, Level4};
+use core::ptr::Unique;
 
 mod entry;
 mod table;
@@ -21,14 +23,6 @@ impl Page {
         self.number * PAGE_SIZE
     }
 
-    pub fn translate(virtual_address: VirtualAddress)
-                     -> Option<PhysicalAddress>
-    {
-        let offset = virtual_address % PAGE_SIZE;
-        Page::translate_page(Page::containing_address(virtual_address))
-            .map(|frame| frame.number * PAGE_SIZE + offset)
-    }
-
     pub fn containing_address(address: VirtualAddress) -> Page {
         assert!(address < 0x0000_8000_0000_0000 ||
             address >= 0xffff_8000_0000_0000,
@@ -36,7 +30,58 @@ impl Page {
         Page { number: address / PAGE_SIZE }
     }
 
-    fn translate_page(page: Page) -> Option<Frame> {
+
+
+    fn p4_index(&self) -> usize {
+        (self.number >> 27) & 0o777
+    }
+
+    fn p3_index(&self) -> usize {
+        (self.number >> 18) & 0o777
+    }
+
+    fn p2_index(&self) -> usize {
+        (self.number >> 9) & 0o777
+    }
+
+    fn p1_index(&self) -> usize {
+        (self.number >> 0) & 0o777
+    }
+}
+
+pub struct ActivePageTable {
+    p4: Unique<Table<Level4>>,
+}
+
+
+impl ActivePageTable {
+    pub unsafe fn new() -> ActivePageTable {
+        ActivePageTable {
+            p4: Unique::new_unchecked(table::P4),
+        }
+    }
+
+    fn p4(&self) -> &Table<Level4> {
+        unsafe { self.p4.as_ref() }
+    }
+
+    fn p4_mut(&mut self) -> &mut Table<Level4> {
+        unsafe { self.p4.as_mut() }
+    }
+    pub fn map_to<A>(&mut self, page: Page, frame: Frame, flags: EntryFlags,
+                     allocator: &mut A)
+        where A: FrameAllocator
+    {
+        let p4 = unsafe { &mut *P4 };
+        let mut p3 = p4.next_table_create(page.p4_index(), allocator);
+        let mut p2 = p3.next_table_create(page.p3_index(), allocator);
+        let mut p1 = p2.next_table_create(page.p2_index(), allocator);
+
+        assert!(p1[page.p1_index()].is_unused());
+        p1[page.p1_index()].set(frame, flags | PRESENT);
+    }
+
+    fn translate_page(&self, page: Page) -> Option<Frame> {
         use self::entry::HUGE_PAGE;
 
         let p3 = unsafe { &*table::P4 }.next_table(page.p4_index());
@@ -73,37 +118,49 @@ impl Page {
         };
 
         p3.and_then(|p3| p3.next_table(page.p3_index()))
-          .and_then(|p2| p2.next_table(page.p2_index()))
-          .and_then(|p1| p1[page.p1_index()].pointed_frame())
-          .or_else(huge_page)
+            .and_then(|p2| p2.next_table(page.p2_index()))
+            .and_then(|p1| p1[page.p1_index()].pointed_frame())
+            .or_else(huge_page)
     }
 
-    fn p4_index(&self) -> usize {
-        (self.number >> 27) & 0o777
+    pub fn translate(&self, virtual_address: VirtualAddress)
+                     -> Option<PhysicalAddress>
+    {
+        let offset = virtual_address % PAGE_SIZE;
+        self.translate_page(Page::containing_address(virtual_address))
+            .map(|frame| frame.number * PAGE_SIZE + offset)
     }
 
-    fn p3_index(&self) -> usize {
-        (self.number >> 18) & 0o777
-    }
-
-    fn p2_index(&self) -> usize {
-        (self.number >> 9) & 0o777
-    }
-
-    fn p1_index(&self) -> usize {
-        (self.number >> 0) & 0o777
-    }
-
-    pub fn map_to<A>(page: Page, frame: Frame, flags: EntryFlags,
-                     allocator: &mut A)
+    pub fn map<A>(&mut self, page: Page, flags: EntryFlags, allocator: &mut A)
         where A: FrameAllocator
     {
-        let p4 = unsafe { &mut *P4 };
-        let mut p3 = p4.next_table_create(page.p4_index(), allocator);
-        let mut p2 = p3.next_table_create(page.p3_index(), allocator);
-        let mut p1 = p2.next_table_create(page.p2_index(), allocator);
+        let frame = allocator.allocate_frame().expect("out of memory");
+        self.map_to(page, frame, flags, allocator)
+    }
 
-        assert!(p1[page.p1_index()].is_unused());
-        p1[page.p1_index()].set(frame, flags | PRESENT);
+    pub fn identity_map<A>(&mut self,
+                           frame: Frame,
+                           flags: EntryFlags,
+                           allocator: &mut A)
+        where A: FrameAllocator
+    {
+        let page = Page::containing_address(frame.start_address());
+        self.map_to(page, frame, flags, allocator)
+    }
+
+    fn unmap<A>(&mut self, page: Page, allocator: &mut A)
+        where A: FrameAllocator
+    {
+        assert!(self.translate(page.start_address()).is_some());
+
+        let p1 = self.p4_mut()
+            .next_table_mut(page.p4_index())
+            .and_then(|p3| p3.next_table_mut(page.p3_index()))
+            .and_then(|p2| p2.next_table_mut(page.p2_index()))
+            .expect("mapping code does not support huge pages");
+        let frame = p1[page.p1_index()].pointed_frame().unwrap();
+        p1[page.p1_index()].set_unused();
+        // TODO free p(1,2,3) table if empty
+        allocator.deallocate_frame(frame);
     }
 }

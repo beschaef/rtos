@@ -18,6 +18,7 @@
 #![no_std]
 #![no_main]
 #![feature(const_fn)]
+#![feature(ptr_internals)]
 
 #[macro_use]
 mod vga_buffer;
