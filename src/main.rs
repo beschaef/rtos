@@ -81,12 +81,25 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
         &boot_info.memory_map,
     );
 
-    for i in 0.. {
-        if let None = frame_allocator.allocate_frame() {
-            println!("allocated {} frames", i);
-            break;
-        }
-    }
+    memory::test_paging(&mut frame_allocator);
+
+    let addr = 42 * 512 * 512 * 4096; // 42th P3 entry
+    let page = Page::containing_address(addr);
+    let frame = frame_allocator.allocate_frame().expect("no more frames");
+    println!("None = {:?}, map to {:?}",
+             page_table.translate(addr),
+             frame);
+    page_table.map_to(page, frame, EntryFlags::empty(), allocator);
+    println!("Some = {:?}", page_table.translate(addr));
+    println!("next free frame: {:?}", allocator.allocate_frame());
+
+
+//    for i in 0.. {
+//        if let None = frame_allocator.allocate_frame() {
+//            println!("allocated {} frames", i);
+//            break;
+//        }
+//    }
     //println!("{:?}", frame_allocator.allocate_frame());
 
     loop {}
