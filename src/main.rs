@@ -58,19 +58,21 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
         .expect("Bootinfo version do not match");
     use memory::FrameAllocator;
 
-    for ele in boot_info.memory_map.iter() {
+    for (i,ele) in boot_info.memory_map.iter().enumerate() {
         let region_type = ele.region_type;
         let start_address = ele.range.start_addr();
         let end_address = ele.range.end_addr();
         let size = end_address - start_address;
         println!(
-            "{:x?} start: {:x?} end: {:x?} size: {:x?}",
-            region_type, start_address, end_address, size,
+            "{:<2}: start: 0x{:<10x} end: 0x{:<10x} size: 0x{:<8x} {:?}",
+            i, start_address, end_address, size, region_type,
         );
     }
 
-    let kernel_start = boot_info.memory_map[3].range.start_addr();
-    let kernel_end = boot_info.memory_map[3].range.end_addr();
+
+
+    let kernel_start = boot_info.memory_map[0].range.start_addr();
+    let kernel_end = boot_info.memory_map[0].range.end_addr();
     let bootloader_start = boot_info.memory_map[2].range.start_addr();
     let bootloader_end = boot_info.memory_map[2].range.end_addr();
 

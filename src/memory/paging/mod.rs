@@ -187,7 +187,7 @@ pub fn test_paging<A>(allocator: &mut A)
     println!("Some = {:?}", page_table.translate(addr));
     println!("next free frame: {:?}", allocator.allocate_frame());
 
-    println!("{:#x}", unsafe {
+    /*println!("{:#x}", unsafe {
         *(Page::containing_address(addr).start_address() as *const u64)
     });
 
@@ -196,5 +196,5 @@ pub fn test_paging<A>(allocator: &mut A)
 
     println!("{:#x}", unsafe {
         *(Page::containing_address(addr).start_address() as *const u64)
-    });
+    });*/
 }
