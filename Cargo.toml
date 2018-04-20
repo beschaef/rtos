@@ -9,6 +9,7 @@ volatile = "0.2.3" # used for volatile writes to the vga buffer
 spin = "0.4.6" # for spinning mutex
 os_bootinfo = "0.2.0-alpha"
 bitflags = "0.9.1"
+x86_64 = "0.1.2"
 
 [package.metadata.bootimage.bootloader]
 git = "https://github.com/rust-osdev/bootloader.git"
