@@ -31,6 +31,7 @@ extern crate os_bootinfo;
 extern crate spin;
 #[macro_use]
 extern crate bitflags;
+extern crate x86_64;
 
 use os_bootinfo::BootInfo;
 
@@ -80,6 +81,8 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
         bootloader_end as usize,
         &boot_info.memory_map,
     );
+
+    memory::test_paging(&mut frame_allocator);
 
 
 //    for i in 0.. {
