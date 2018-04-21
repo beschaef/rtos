@@ -1,16 +1,12 @@
 extern crate os_bootinfo;
 use memory::{Frame, FrameAllocator};
 
-use os_bootinfo::{MemoryMap, MemoryRegion};
+use os_bootinfo::{MemoryMap, MemoryRegion, MemoryRegionType};
 
 pub struct AreaFrameAllocator {
     next_free_frame: Frame,
     current_area: Option<&'static MemoryRegion>,
     areas: &'static MemoryMap,
-    kernel_start: Frame,
-    kernel_end: Frame,
-    multiboot_start: Frame,
-    multiboot_end: Frame,
 }
 
 impl FrameAllocator for AreaFrameAllocator {
@@ -26,24 +22,16 @@ impl FrameAllocator for AreaFrameAllocator {
 
             // the last frame of the current area
             let current_area_last_frame = {
-                let length = area.range.end_addr() - area.range.start_addr();
-                let address = area.range.start_addr() + length - 1;
+                let address = area.range.end_addr();
                 Frame::containing_address(address as usize)
             };
 
             if frame > current_area_last_frame {
                 // all frames of current area are used, switch to next area
                 self.choose_next_area();
-            } else if frame >= self.kernel_start && frame <= self.kernel_end {
-                // `frame` is used by the kernel
-                self.next_free_frame = Frame {
-                    number: self.kernel_end.number + 1,
-                };
-            } else if frame >= self.multiboot_start && frame <= self.multiboot_end {
-                // `frame` is used by the multiboot information structure
-                self.next_free_frame = Frame {
-                    number: self.multiboot_end.number + 1,
-                };
+
+            } else if self.current_area.unwrap().region_type != MemoryRegionType::Usable {
+                self.choose_next_area();
             } else {
                 // frame is unused, increment `next_free_frame` and return it
                 self.next_free_frame.number += 1;
@@ -63,20 +51,12 @@ impl FrameAllocator for AreaFrameAllocator {
 
 impl AreaFrameAllocator {
     pub fn new(
-        kernel_start: usize,
-        kernel_end: usize,
-        multiboot_start: usize,
-        multiboot_end: usize,
         memory_areas: &'static MemoryMap,
     ) -> AreaFrameAllocator {
         let mut allocator = AreaFrameAllocator {
             next_free_frame: Frame::containing_address(0),
             current_area: None,
             areas: &memory_areas,
-            kernel_start: Frame::containing_address(kernel_start),
-            kernel_end: Frame::containing_address(kernel_end),
-            multiboot_start: Frame::containing_address(multiboot_start),
-            multiboot_end: Frame::containing_address(multiboot_end),
         };
         allocator.choose_next_area();
         allocator
@@ -87,9 +67,8 @@ impl AreaFrameAllocator {
             .iter()
             .clone()
             .filter(|area| {
-                let length = area.range.end_addr() - area.range.start_addr();
-                let address = area.range.start_addr() + length - 1;
-                Frame::containing_address(address as usize) >= self.next_free_frame
+                let address = area.range.end_addr() -1;
+                Frame::containing_address(address as usize) >= self.next_free_frame && area.region_type == MemoryRegionType::Usable
             })
             .min_by_key(|area| area.range.start_addr());
 

@@ -77,23 +77,31 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
     let bootloader_end = boot_info.memory_map[2].range.end_addr();
 
     let mut frame_allocator = memory::AreaFrameAllocator::new(
-        kernel_start as usize,
-        kernel_end as usize,
-        bootloader_start as usize,
-        bootloader_end as usize,
         &boot_info.memory_map,
     );
 
     memory::test_paging(&mut frame_allocator);
 
+    println!("{:?}", frame_allocator.allocate_frame());
+    println!("{:?}", frame_allocator.allocate_frame());
+    println!("{:?}", frame_allocator.allocate_frame());
 
-//    for i in 0.. {
-//        if let None = frame_allocator.allocate_frame() {
-//            println!("allocated {} frames", i);
-//            break;
-//        }
-//    }
-    //println!("{:?}", frame_allocator.allocate_frame());
+    for i in 0.. {
+        if let None = frame_allocator.allocate_frame() {
+            println!("allocated {} frames", i); // printed 31978 frames
+                                                // sind 31593 aus der 2ten usable region +
+                                                // 385 aus der ersten, die erste hätte 390
+                                                // wir haben aber aufgrund test_paging +
+                                                // die 3 prints schon 5 verbraucht
+            break;
+        }
+    }
+
+    println!("{:?}", frame_allocator.allocate_frame());
+    println!("{:?}", frame_allocator.allocate_frame());
+    println!("{:?}", frame_allocator.allocate_frame());
+    println!("{:?}", frame_allocator.allocate_frame());
+
 
     loop {}
 }
