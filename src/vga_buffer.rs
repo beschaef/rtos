@@ -1,7 +1,9 @@
 // #[allow(dead_code)] to supress the unsused warning for the values 16-255
 // #[derive(Debug, Clone, Copy)] enables copy semantic and make it printable
 // #[repr(u8)] variants stored as u8 (u4 would be enough, but rust has no u4)
-use core::fmt;
+use core::fmt::{Result, Write, Arguments};
+use core::slice;
+use core::sync::atomic::{AtomicUsize, Ordering};
 use spin::Mutex;
 use volatile::Volatile;
 
@@ -79,6 +81,15 @@ impl Writer {
         }
     }
 
+    pub fn write_at(&mut self, str: &str, row: u8, col: u8, color: Color) {
+        for byte in str.bytes() {
+            self.buffer.chars[row as usize][col as usize].write(ScreenChar {
+                ascii_character: byte,
+                color_code: ColorCode::new(color, Color::Black),
+            });
+        }
+    }
+
     fn new_line(&mut self) {
         for row in 1..BUFFER_HEIGHT {
             for col in 0..BUFFER_WIDTH {
@@ -100,6 +111,18 @@ impl Writer {
         }
     }
 
+    pub fn clear_screen(&mut self) {
+        let blank = ScreenChar {
+            ascii_character: b' ',
+            color_code: self.color_code,
+        };
+        for col in 0..BUFFER_WIDTH {
+            for row in 0..BUFFER_HEIGHT{
+                self.buffer.chars[row][col].write(blank);
+            }
+        }
+    }
+
     pub fn write_string(&mut self, s: &str) {
         for byte in s.bytes() {
             self.write_byte(byte)
@@ -107,8 +130,8 @@ impl Writer {
     }
 }
 
-impl fmt::Write for Writer {
-    fn write_str(&mut self, s: &str) -> fmt::Result {
+impl Write for Writer {
+    fn write_str(&mut self, s: &str) -> Result {
         self.write_string(s);
         Ok(())
     }
@@ -117,7 +140,7 @@ impl fmt::Write for Writer {
 lazy_static! {
     pub static ref WRITER: Mutex<Writer> = Mutex::new(Writer {
         column_position: 0,
-        color_code: ColorCode::new(Color::Green, Color::Black),
+        color_code: ColorCode::new(Color::Cyan, Color::Black),
         buffer: unsafe { &mut *(0xb8000 as *mut Buffer) },
     });
 }
@@ -132,7 +155,22 @@ macro_rules! println {
     ($fmt:expr, $($arg:tt)*) => (print!(concat!($fmt, "\n"), $($arg)*));
 }
 
-pub fn print(args: fmt::Arguments) {
+pub fn print(args: Arguments) {
     use core::fmt::Write;
     WRITER.lock().write_fmt(args).unwrap();
+}
+
+pub fn write(str: &str) {
+    use core::fmt::Write;
+    WRITER.lock().write_str(str).unwrap();
+}
+
+pub fn write_at(str: &str, row: u8, col: u8, color: Color) {
+    use core::fmt::Write;
+    WRITER.lock().write_at(str, row,col,color);
+}
+
+pub fn clear_screen() {
+    use core::fmt::Write;
+    WRITER.lock().clear_screen();
 }

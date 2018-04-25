@@ -34,6 +34,7 @@ extern crate bitflags;
 extern crate x86_64;
 
 use os_bootinfo::BootInfo;
+use vga_buffer::Color;
 
 #[lang = "panic_fmt"]
 #[no_mangle]
@@ -68,14 +69,6 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
             i, start_address, end_address, size, region_type,
         );
     }
-
-
-
-    let kernel_start = boot_info.memory_map[0].range.start_addr();
-    let kernel_end = boot_info.memory_map[0].range.end_addr();
-    let bootloader_start = boot_info.memory_map[2].range.start_addr();
-    let bootloader_end = boot_info.memory_map[2].range.end_addr();
-
     let mut frame_allocator = memory::AreaFrameAllocator::new(
         &boot_info.memory_map,
     );
@@ -102,6 +95,29 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
     println!("{:?}", frame_allocator.allocate_frame());
     println!("{:?}", frame_allocator.allocate_frame());
 
+    let green = Color::Green;
+    let blue = Color::Blue;
+
+    vga_buffer::clear_screen();
+
+    //vga_buffer::write_at("#", 10, 10, green);
+
+    let mut x = 20;
+    let mut y = 20;
+    let mut x_old = x;
+    let mut y_old = y;
+    loop {
+        sleep();
+        vga_buffer::write_at(" ", x_old, y_old, green);
+        vga_buffer::write_at("#", x, y, green);
+        y_old = y;
+        x_old = x;
+        y = (y + 1) % 30;
+    }
 
     loop {}
+}
+
+pub fn sleep() {
+    for i in 0..500000{ let x = i;}
 }
