@@ -128,6 +128,10 @@ impl Writer {
             self.write_byte(byte)
         }
     }
+
+    pub fn read_byte(&self, row: usize, col: usize) -> u8 {
+        self.buffer.chars[row][col].read().ascii_character
+    }
 }
 
 impl Write for Writer {
@@ -173,4 +177,9 @@ pub fn write_at(str: &str, row: u8, col: u8, color: Color) {
 pub fn clear_screen() {
     use core::fmt::Write;
     WRITER.lock().clear_screen();
+}
+
+pub fn read_at(row: usize, col: usize) -> u8 {
+    use core::fmt::Write;
+    WRITER.lock().read_byte(row, col)
 }

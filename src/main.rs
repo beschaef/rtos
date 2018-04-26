@@ -32,9 +32,13 @@ extern crate spin;
 #[macro_use]
 extern crate bitflags;
 extern crate x86_64;
+#[macro_use]
+extern crate raw_cpuid;
 
 use os_bootinfo::BootInfo;
 use vga_buffer::Color;
+
+use raw_cpuid::{ProcessorFrequencyInfo, CpuId};
 
 #[lang = "panic_fmt"]
 #[no_mangle]
@@ -106,18 +110,86 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
     let mut y = 20;
     let mut x_old = x;
     let mut y_old = y;
-    loop {
+
+    let cpuid = CpuId::new();
+    let time = x86_64::instructions::rdtsc();
+    println!("processor info {:?}", cpuid.get_processor_frequency_info());
+    /*let time = x86_64::instructions::rdtsc();
+    println!("processor info {:?}", time);
+    let time = x86_64::instructions::rdtsc();
+    println!("processor info {:?}", time);
+    let time = x86_64::instructions::rdtsc();
+    println!("processor info {:?}", time);*/
+
+
+    /*loop {
         sleep();
         vga_buffer::write_at(" ", x_old, y_old, green);
         vga_buffer::write_at("#", x, y, green);
         y_old = y;
         x_old = x;
-        y = (y + 1) % 30;
-    }
+        y = (y + 1) % 20;
+        x = (x + 1) % 20;
+    }*/
+    init_clock();
+    uptime();
 
     loop {}
 }
 
 pub fn sleep() {
-    for i in 0..500000{ let x = i;}
+    //1342302694
+    for i in 0..500_000{ let x = i;}
+}
+
+pub fn uptime() {
+    let color = Color::Magenta;
+    loop {
+        match vga_buffer::read_at(0,78) {
+            48 => vga_buffer::write_at("1", 0, 78, color),
+            49 => vga_buffer::write_at("2", 0, 78, color),
+            50 => vga_buffer::write_at("3", 0, 78, color),
+            51 => vga_buffer::write_at("4", 0, 78, color),
+            52 => vga_buffer::write_at("5", 0, 78, color),
+            53 => vga_buffer::write_at("6", 0, 78, color),
+            54 => vga_buffer::write_at("7", 0, 78, color),
+            55 => vga_buffer::write_at("8", 0, 78, color),
+            56 => vga_buffer::write_at("9", 0, 78, color),
+            57 => {
+                vga_buffer::write_at("0", 0, 78, color);
+                increase_time(77,78, 2);},
+            _ => vga_buffer::write_at("X", 0, 78, color),
+        }
+        sleep();
+    }
+    println!("vga read: {:?}", vga_buffer::read_at(0,74));
+}
+
+pub fn increase_time(col : u8, col_small: u8, step: u8) {
+    let color = Color::Magenta;
+    match vga_buffer::read_at(0,col as usize) {
+        48 => vga_buffer::write_at("1", 0, col, color),
+        49 => vga_buffer::write_at("2", 0, col, color),
+        50 => vga_buffer::write_at("3", 0, col, color),
+        51 => vga_buffer::write_at("4", 0, col, color),
+        52 => vga_buffer::write_at("5", 0, col, color),
+        53 => {
+            let mut step = step;
+            if vga_buffer::read_at(0,col as usize) == 58 { step = step +1}
+            vga_buffer::write_at("0", 0, col, color);
+            if col > 70 {increase_time(col - step,78, (step + 1));}},
+        _ => vga_buffer::write_at("X", 0, col, color),
+    }
+}
+
+pub fn init_clock() {
+    let color = Color::Magenta;
+    vga_buffer::write_at(":", 0, 76, color);
+    vga_buffer::write_at(":", 0, 73, color);
+    vga_buffer::write_at("0", 0, 71, color);
+    vga_buffer::write_at("0", 0, 72, color);
+    vga_buffer::write_at("0", 0, 74, color);
+    vga_buffer::write_at("0", 0, 75, color);
+    vga_buffer::write_at("0", 0, 77, color);
+    vga_buffer::write_at("0", 0, 78, color);
 }
