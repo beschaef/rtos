@@ -29,7 +29,6 @@ impl FrameAllocator for AreaFrameAllocator {
             if frame > current_area_last_frame {
                 // all frames of current area are used, switch to next area
                 self.choose_next_area();
-
             } else if self.current_area.unwrap().region_type != MemoryRegionType::Usable {
                 self.choose_next_area();
             } else {
@@ -50,9 +49,7 @@ impl FrameAllocator for AreaFrameAllocator {
 }
 
 impl AreaFrameAllocator {
-    pub fn new(
-        memory_areas: &'static MemoryMap,
-    ) -> AreaFrameAllocator {
+    pub fn new(memory_areas: &'static MemoryMap) -> AreaFrameAllocator {
         let mut allocator = AreaFrameAllocator {
             next_free_frame: Frame::containing_address(0),
             current_area: None,
@@ -67,8 +64,9 @@ impl AreaFrameAllocator {
             .iter()
             .clone()
             .filter(|area| {
-                let address = area.range.end_addr() -1;
-                Frame::containing_address(address as usize) >= self.next_free_frame && area.region_type == MemoryRegionType::Usable
+                let address = area.range.end_addr() - 1;
+                Frame::containing_address(address as usize) >= self.next_free_frame
+                    && area.region_type == MemoryRegionType::Usable
             })
             .min_by_key(|area| area.range.start_addr());
 

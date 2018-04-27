@@ -1,7 +1,7 @@
 // #[allow(dead_code)] to supress the unsused warning for the values 16-255
 // #[derive(Debug, Clone, Copy)] enables copy semantic and make it printable
 // #[repr(u8)] variants stored as u8 (u4 would be enough, but rust has no u4)
-use core::fmt::{Result, Write, Arguments};
+use core::fmt::{Arguments, Result, Write};
 use core::slice;
 use core::sync::atomic::{AtomicUsize, Ordering};
 use spin::Mutex;
@@ -117,7 +117,7 @@ impl Writer {
             color_code: self.color_code,
         };
         for col in 0..BUFFER_WIDTH {
-            for row in 0..BUFFER_HEIGHT{
+            for row in 0..BUFFER_HEIGHT {
                 self.buffer.chars[row][col].write(blank);
             }
         }
@@ -171,7 +171,7 @@ pub fn write(str: &str) {
 
 pub fn write_at(str: &str, row: u8, col: u8, color: Color) {
     use core::fmt::Write;
-    WRITER.lock().write_at(str, row,col,color);
+    WRITER.lock().write_at(str, row, col, color);
 }
 
 pub fn clear_screen() {

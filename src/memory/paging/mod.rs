@@ -1,19 +1,18 @@
-use memory::PAGE_SIZE;
-use memory::Frame;
 pub use self::entry::*;
-use memory::FrameAllocator;
-use memory::paging::table::P4;
-use self::table::{Table, Level4};
-use core::ptr::Unique;
-use self::temporary_page::TemporaryPage;
 pub use self::mapper::Mapper;
+use self::table::{Level4, Table};
+use self::temporary_page::TemporaryPage;
 use core::ops::{Deref, DerefMut};
-
+use core::ptr::Unique;
+use memory::Frame;
+use memory::FrameAllocator;
+use memory::PAGE_SIZE;
+use memory::paging::table::P4;
 
 mod entry;
+mod mapper;
 mod table;
 mod temporary_page;
-mod mapper;
 
 const ENTRY_COUNT: usize = 512;
 
@@ -31,13 +30,15 @@ impl Page {
     }
 
     pub fn containing_address(address: VirtualAddress) -> Page {
-        assert!(address < 0x0000_8000_0000_0000 ||
-            address >= 0xffff_8000_0000_0000,
-            "invalid address: 0x{:x}", address);
-        Page { number: address / PAGE_SIZE }
+        assert!(
+            address < 0x0000_8000_0000_0000 || address >= 0xffff_8000_0000_0000,
+            "invalid address: 0x{:x}",
+            address
+        );
+        Page {
+            number: address / PAGE_SIZE,
+        }
     }
-
-
 
     fn p4_index(&self) -> usize {
         (self.number >> 27) & 0o777
@@ -61,13 +62,13 @@ pub struct InactivePageTable {
 }
 
 impl InactivePageTable {
-    pub fn new(frame: Frame,
-               active_table: &mut ActivePageTable,
-               temporary_page: &mut TemporaryPage)
-               -> InactivePageTable {
+    pub fn new(
+        frame: Frame,
+        active_table: &mut ActivePageTable,
+        temporary_page: &mut TemporaryPage,
+    ) -> InactivePageTable {
         {
-            let table = temporary_page.map_table_frame(frame.clone(),
-                                                       active_table);
+            let table = temporary_page.map_table_frame(frame.clone(), active_table);
             // now we are able to zero the table
             table.zero();
             // set up recursive mapping for the table
@@ -79,18 +80,20 @@ impl InactivePageTable {
     }
 }
 
-
 pub fn test_paging<A>(allocator: &mut A)
-    where A: FrameAllocator
+where
+    A: FrameAllocator,
 {
     let mut page_table = unsafe { ActivePageTable::new() };
 
     let addr = 42 * 512 * 512 * 4096; // 42th P3 entry
     let page = Page::containing_address(addr);
     let frame = allocator.allocate_frame().expect("no more frames");
-    println!("None = {:?}, map to {:?}",
-             page_table.translate(addr),
-             frame);
+    println!(
+        "None = {:?}, map to {:?}",
+        page_table.translate(addr),
+        frame
+    );
     page_table.map_to(page, frame, EntryFlags::empty(), allocator);
     println!("Some = {:?}", page_table.translate(addr));
     println!("next free frame: {:?}", allocator.allocate_frame());
@@ -106,7 +109,6 @@ pub fn test_paging<A>(allocator: &mut A)
         *(Page::containing_address(addr).start_address() as *const u64)
     });*/
 }
-
 
 pub struct ActivePageTable {
     mapper: Mapper,
@@ -133,18 +135,19 @@ impl ActivePageTable {
         }
     }
 
-    pub fn with<F>(&mut self,
-                   table: &mut InactivePageTable,
-                   temporary_page: &mut temporary_page::TemporaryPage, // new
-                   f: F)
-        where F: FnOnce(&mut Mapper)
+    pub fn with<F>(
+        &mut self,
+        table: &mut InactivePageTable,
+        temporary_page: &mut temporary_page::TemporaryPage, // new
+        f: F,
+    ) where
+        F: FnOnce(&mut Mapper),
     {
         use x86_64::instructions::tlb;
         use x86_64::registers::control_regs;
 
         {
-            let backup = Frame::containing_address(
-                control_regs::cr3().0 as usize);
+            let backup = Frame::containing_address(control_regs::cr3().0 as usize);
 
             // map temporary_page to current p4 table
             let p4_table = temporary_page.map_table_frame(backup.clone(), self);
@@ -164,4 +167,3 @@ impl ActivePageTable {
         temporary_page.unmap(self);
     }
 }
-
