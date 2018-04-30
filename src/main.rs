@@ -97,8 +97,10 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
 
     interrupts::init();
 
-    // invoke a breakpoint exception
-    x86_64::instructions::interrupts::int3();
+    // trigger a page fault
+    unsafe {
+        *(0xdeadbeaf as *mut u64) = 42;
+    };
 
     println!("It did not crash!");
     loop {}
