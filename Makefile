@@ -1,3 +1,5 @@
+all:
+	bootimage build
 run:
 	@qemu-system-x86_64 -drive format=raw,file=bootimage.bin -cpu host -enable-kvm -s
 
