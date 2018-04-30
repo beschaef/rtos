@@ -20,9 +20,11 @@
 #![feature(const_fn)]
 #![feature(ptr_internals)]
 #![feature(asm)]
+#![feature(abi_x86_interrupt)]
 
 #[macro_use]
 mod vga_buffer;
+mod interrupts;
 mod memory;
 
 extern crate volatile;
@@ -64,7 +66,7 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
         .expect("Bootinfo version do not match");
     use memory::FrameAllocator;
 
-    for (i, ele) in boot_info.memory_map.iter().enumerate() {
+    /*for (i, ele) in boot_info.memory_map.iter().enumerate() {
         let region_type = ele.region_type;
         let start_address = ele.range.start_addr();
         let end_address = ele.range.end_addr();
@@ -73,30 +75,9 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
             "{:<2}: start: 0x{:<10x} end: 0x{:<10x} size: 0x{:<8x} {:?}",
             i, start_address, end_address, size, region_type,
         );
-    }
+    }*/
+
     let mut frame_allocator = memory::AreaFrameAllocator::new(&boot_info.memory_map);
-
-    memory::test_paging(&mut frame_allocator);
-
-    println!("{:?}", frame_allocator.allocate_frame());
-    println!("{:?}", frame_allocator.allocate_frame());
-    println!("{:?}", frame_allocator.allocate_frame());
-
-    for i in 0.. {
-        if let None = frame_allocator.allocate_frame() {
-            println!("allocated {} frames", i); // printed 31978 frames
-                                                // sind 31593 aus der 2ten usable region +
-                                                // 385 aus der ersten, die erste hätte 390
-                                                // wir haben aber aufgrund test_paging +
-                                                // die 3 prints schon 5 verbraucht
-            break;
-        }
-    }
-
-    println!("{:?}", frame_allocator.allocate_frame());
-    println!("{:?}", frame_allocator.allocate_frame());
-    println!("{:?}", frame_allocator.allocate_frame());
-    println!("{:?}", frame_allocator.allocate_frame());
 
     let green = Color::Green;
     let blue = Color::Blue;
@@ -110,33 +91,17 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
     let mut x_old = x;
     let mut y_old = y;
 
-    let cpuid = CpuId::new();
     println!("processor info {:?}", cpuid.get_processor_frequency_info());
-    let time = x86_64::instructions::rdtsc();
-    //let x = 1+1;
-    let time2 = x86_64::instructions::rdtsc();
-    let x = x86_64::registers::msr::IA32_TIME_STAMP_COUNTER;
-    let y = x86_64::registers::msr::IA32_TSC_ADJUST;
-    let z = x86_64::registers::msr::IA32_TSC_DEADLINE;
-    let f = x86_64::registers::msr::IA32_TSC_AUX;
-    println!("processor info {:?}", time2);
-    println!("processor info {:?}", x);
-    println!("processor info {:?}", y);
-    println!("processor info {:?}", z);
-    println!("tsc info {:?}", cpuid.get_tsc_info());
-    let time = cpuid.get_extended_feature_info();
-    println!("processor info {:?}", time);
-
-    /*loop {
-        sleep();
-        vga_buffer::write_at(" ", x_old, y_old, green);
-        vga_buffer::write_at("#", x, y, green);
-        y_old = y;
-        x_old = x;
-        y = (y + 1) % 20;
-        x = (x + 1) % 20;
-    }*/
     println!("hz {:?}", calc_cpu_freq());
+
+    interrupts::init();
+
+    // invoke a breakpoint exception
+    x86_64::instructions::interrupts::int3();
+
+    println!("It did not crash!");
+    loop {}
+
     init_clock();
     uptime();
 
