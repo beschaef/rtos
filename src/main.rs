@@ -151,7 +151,7 @@ pub fn sleep() {
 }
 
 pub fn uptime() {
-    let color = Color::Magenta;
+    let color = Color::LightGreen;
     loop {
         match vga_buffer::read_at(0, 78) {
             48 => vga_buffer::write_at("1", 0, 78, color),
@@ -186,7 +186,7 @@ pub fn uptime() {
 }
 
 pub fn increase_minute() {
-    let color = Color::Magenta;
+    let color = Color::LightGreen;
     match vga_buffer::read_at(0, 75) {
         48 => vga_buffer::write_at("1", 0, 75, color),
         49 => vga_buffer::write_at("2", 0, 75, color),
@@ -217,7 +217,7 @@ pub fn increase_minute() {
 }
 
 pub fn increase_hour() {
-    let color = Color::Magenta;
+    let color = Color::LightGreen;
     match (vga_buffer::read_at(0, 71), vga_buffer::read_at(0, 72)) {
         (48, 48) => vga_buffer::write_at("1", 0, 72, color),
         (48, 49) => vga_buffer::write_at("2", 0, 72, color),
@@ -257,7 +257,7 @@ pub fn increase_hour() {
 }
 
 pub fn init_clock() {
-    let color = Color::Magenta;
+    let color = Color::LightGreen;
     vga_buffer::write_at(":", 0, 76, color);
     vga_buffer::write_at(":", 0, 73, color);
     vga_buffer::write_at("0", 0, 71, color);
