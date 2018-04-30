@@ -97,10 +97,7 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
 
     interrupts::init();
 
-    // trigger a page fault
-    unsafe {
-        *(0xdeadbeaf as *mut u64) = 42;
-    };
+    
 
     println!("It did not crash!");
     loop {}
