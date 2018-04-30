@@ -91,6 +91,7 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
     let mut x_old = x;
     let mut y_old = y;
 
+    let cpuid = raw_cpuid::CpuId::new();
     println!("processor info {:?}", cpuid.get_processor_frequency_info());
     println!("hz {:?}", calc_cpu_freq());
 
@@ -148,7 +149,6 @@ pub fn uptime() {
         }
         sleep();
     }
-    println!("vga read: {:?}", vga_buffer::read_at(0, 74));
 }
 
 pub fn increase_minute() {
