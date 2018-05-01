@@ -21,6 +21,10 @@
 #![feature(ptr_internals)]
 #![feature(asm)]
 #![feature(abi_x86_interrupt)]
+#![feature(alloc)]
+#![feature(allocator_api)]
+#![feature(const_atomic_usize_new)]
+#![feature(global_allocator, heap_api)]
 
 #[macro_use]
 mod vga_buffer;
@@ -35,13 +39,15 @@ extern crate spin;
 #[macro_use]
 extern crate bitflags;
 extern crate x86_64;
-#[macro_use]
 extern crate raw_cpuid;
+#[macro_use]
+extern crate alloc;
+extern crate rlibc;
 
 use os_bootinfo::BootInfo;
 use vga_buffer::Color;
 
-use raw_cpuid::{CpuId, ProcessorFrequencyInfo};
+use memory::heap_allocator::BumpAllocator;
 
 #[lang = "panic_fmt"]
 #[no_mangle]
@@ -64,7 +70,6 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
     boot_info
         .check_version()
         .expect("Bootinfo version do not match");
-    use memory::FrameAllocator;
 
     /*for (i, ele) in boot_info.memory_map.iter().enumerate() {
         let region_type = ele.region_type;
@@ -93,17 +98,13 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
 
     let cpuid = raw_cpuid::CpuId::new();
     println!("processor info {:?}", cpuid.get_processor_frequency_info());
-    println!("hz {:?}", calc_cpu_freq());
+//    println!("hz {:?}", calc_cpu_freq());
 
-    interrupts::init();
+    //interrupts::init();
 
-    // trigger a page fault
-    unsafe {
-        *(0xdeadbeaf as *mut u64) = 42;
-    };
 
-    println!("It did not crash!");
-    loop {}
+    use alloc::boxed::Box;
+    let heap_test = Box::new(42);
 
     init_clock();
     uptime();
@@ -355,3 +356,10 @@ pub fn calc_cpu_freq() -> usize {
         return cpu_freq;
     }
 }
+
+pub const HEAP_START: usize = 0o_000_001_000_000_0000;
+pub const HEAP_SIZE: usize = 100 * 1024; // 100 KiB
+
+#[global_allocator]
+static HEAP_ALLOCATOR: BumpAllocator = BumpAllocator::new(HEAP_START,
+    HEAP_START + HEAP_SIZE);

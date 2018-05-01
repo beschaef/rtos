@@ -4,6 +4,7 @@ pub use self::paging::test_paging;
 
 mod area_frame_allocator;
 mod paging;
+pub mod heap_allocator;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Frame {

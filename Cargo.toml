@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["benjamin <beschaef@htwg-konstanz.de>"]
 
 [dependencies]
-rlibc = "1.0" # provides implementations  for the common mem* functions
+rlibc = "1.0.0" # provides implementations  for the common mem* functions
 volatile = "0.2.3" # used for volatile writes to the vga buffer
 spin = "0.4.6" # for spinning mutex
 os_bootinfo = "0.2.0-alpha"
