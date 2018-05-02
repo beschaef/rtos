@@ -71,19 +71,6 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
         .check_version()
         .expect("Bootinfo version do not match");
 
-    /*for (i, ele) in boot_info.memory_map.iter().enumerate() {
-        let region_type = ele.region_type;
-        let start_address = ele.range.start_addr();
-        let end_address = ele.range.end_addr();
-        let size = end_address - start_address;
-        println!(
-            "{:<2}: start: 0x{:<10x} end: 0x{:<10x} size: 0x{:<8x} {:?}",
-            i, start_address, end_address, size, region_type,
-        );
-    }*/
-
-    let mut frame_allocator = memory::AreaFrameAllocator::new(&boot_info.memory_map);
-
     let green = Color::Green;
     let blue = Color::Blue;
 
@@ -102,6 +89,7 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
 
     //interrupts::init();
 
+    memory::init(boot_info);
 
     use alloc::boxed::Box;
     let heap_test = Box::new(42);

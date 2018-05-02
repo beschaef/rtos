@@ -35,3 +35,13 @@ pub trait FrameAllocator {
     fn allocate_frame(&mut self) -> Option<Frame>;
     fn deallocate_frame(&mut self, frame: Frame);
 }
+
+use os_bootinfo::BootInfo;
+
+pub fn init(boot_info: &'static BootInfo) {
+    let memory_map_tag = &boot_info.memory_map;
+
+    let mut frame_allocator = AreaFrameAllocator::new(
+        memory_map_tag);
+
+}
