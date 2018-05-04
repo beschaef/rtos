@@ -38,11 +38,13 @@ extern crate os_bootinfo;
 extern crate spin;
 #[macro_use]
 extern crate bitflags;
-extern crate x86_64;
 extern crate raw_cpuid;
+extern crate x86_64;
 #[macro_use]
 extern crate alloc;
 extern crate rlibc;
+#[macro_use]
+extern crate once;
 
 use os_bootinfo::BootInfo;
 use vga_buffer::Color;
@@ -85,20 +87,28 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
 
     let cpuid = raw_cpuid::CpuId::new();
     println!("processor info {:?}", cpuid.get_processor_frequency_info());
-//    println!("hz {:?}", calc_cpu_freq());
+    //    println!("hz {:?}", calc_cpu_freq());
 
     //interrupts::init();
 
     memory::init(boot_info);
 
     use alloc::boxed::Box;
-    let heap_test = Box::new(42);
+    let mut heap_test = Box::new(42);
+    *heap_test -= 15;
+    let heap_test2 = Box::new("hello");
+    println!("{:?} {:?}", heap_test, heap_test2);
+
+    let mut vec_test = vec![1,2,3,4,5,6,7];
+    vec_test[3] = 42;
+    for i in &vec_test {
+        print!("{} ", i);
+    }
 
     init_clock();
     uptime();
 
     loop {}
-    
 }
 
 pub fn sleep() {
@@ -349,5 +359,4 @@ pub const HEAP_START: usize = 0o_000_001_000_000_0000;
 pub const HEAP_SIZE: usize = 100 * 1024; // 100 KiB
 
 #[global_allocator]
-static HEAP_ALLOCATOR: BumpAllocator = BumpAllocator::new(HEAP_START,
-    HEAP_START + HEAP_SIZE);
+static HEAP_ALLOCATOR: BumpAllocator = BumpAllocator::new(HEAP_START, HEAP_START + HEAP_SIZE);
