@@ -1,5 +1,11 @@
-all:
+build:
 	bootimage build
+clean:
+	cargo clean
+	cargo update
+all:
+	$(MAKE) clean
+	$(MAKE) build
 fmt:
 	cargo fmt
 run:
