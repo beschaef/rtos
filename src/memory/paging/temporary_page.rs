@@ -10,6 +10,7 @@ pub struct TemporaryPage {
 }
 
 impl TemporaryPage {
+    #[allow(dead_code)]
     pub fn new<A>(page: Page, allocator: &mut A) -> TemporaryPage
     where
         A: FrameAllocator,
@@ -71,6 +72,7 @@ impl FrameAllocator for TinyAllocator {
 }
 
 impl TinyAllocator {
+    #[allow(dead_code)]
     fn new<A>(allocator: &mut A) -> TinyAllocator
     where
         A: FrameAllocator,

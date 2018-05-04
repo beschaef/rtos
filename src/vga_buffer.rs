@@ -2,8 +2,6 @@
 // #[derive(Debug, Clone, Copy)] enables copy semantic and make it printable
 // #[repr(u8)] variants stored as u8 (u4 would be enough, but rust has no u4)
 use core::fmt::{Arguments, Result, Write};
-use core::slice;
-use core::sync::atomic::{AtomicUsize, Ordering};
 use spin::Mutex;
 use volatile::Volatile;
 
@@ -164,22 +162,20 @@ pub fn print(args: Arguments) {
     WRITER.lock().write_fmt(args).unwrap();
 }
 
+#[allow(dead_code)]
 pub fn write(str: &str) {
     use core::fmt::Write;
     WRITER.lock().write_str(str).unwrap();
 }
 
 pub fn write_at(str: &str, row: u8, col: u8, color: Color) {
-    use core::fmt::Write;
     WRITER.lock().write_at(str, row, col, color);
 }
 
 pub fn clear_screen() {
-    use core::fmt::Write;
     WRITER.lock().clear_screen();
 }
 
 pub fn read_at(row: usize, col: usize) -> u8 {
-    use core::fmt::Write;
     WRITER.lock().read_byte(row, col)
 }

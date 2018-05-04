@@ -126,7 +126,7 @@ impl Clock {
     pub fn sleep(&self) {
         //1342302694
         for i in 0..500_000 {
-            let x = i;
+            let _x = i;
         }
     }
 }

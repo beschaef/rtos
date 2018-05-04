@@ -1,6 +1,5 @@
 pub use self::area_frame_allocator::AreaFrameAllocator;
 use self::paging::PhysicalAddress;
-pub use self::paging::test_paging;
 
 mod area_frame_allocator;
 //pub mod heap_allocator;
@@ -24,6 +23,7 @@ impl Frame {
         self.number * PAGE_SIZE
     }
 
+    #[allow(dead_code)]
     fn clone(&self) -> Frame {
         Frame {
             number: self.number,

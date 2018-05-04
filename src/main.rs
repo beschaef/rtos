@@ -49,7 +49,6 @@ extern crate once;
 extern crate linked_list_allocator;
 
 use os_bootinfo::BootInfo;
-use vga_buffer::Color;
 
 //use memory::heap_allocator::BumpAllocator;
 
@@ -75,23 +74,15 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
         .check_version()
         .expect("Bootinfo version do not match");
 
-    let green = Color::Green;
-    let blue = Color::Blue;
 
     vga_buffer::clear_screen();
 
-    //vga_buffer::write_at("#", 10, 10, green);
-
-    let mut x = 20;
-    let mut y = 20;
-    let mut x_old = x;
-    let mut y_old = y;
 
     let cpuid = raw_cpuid::CpuId::new();
     println!("processor info {:?}", cpuid.get_processor_frequency_info());
     //    println!("hz {:?}", calc_cpu_freq());
 
-    //interrupts::init();
+    interrupts::init();
 
     memory::init(boot_info);
 
