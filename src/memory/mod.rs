@@ -3,7 +3,7 @@ use self::paging::PhysicalAddress;
 pub use self::paging::test_paging;
 
 mod area_frame_allocator;
-pub mod heap_allocator;
+//pub mod heap_allocator;
 mod paging;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]

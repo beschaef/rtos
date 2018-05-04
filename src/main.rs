@@ -45,11 +45,12 @@ extern crate alloc;
 extern crate rlibc;
 #[macro_use]
 extern crate once;
+extern crate linked_list_allocator;
 
 use os_bootinfo::BootInfo;
 use vga_buffer::Color;
 
-use memory::heap_allocator::BumpAllocator;
+//use memory::heap_allocator::BumpAllocator;
 
 #[lang = "panic_fmt"]
 #[no_mangle]
@@ -92,6 +93,10 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
     //interrupts::init();
 
     memory::init(boot_info);
+
+    unsafe {
+        HEAP_ALLOCATOR.lock().init(HEAP_START, HEAP_START + HEAP_SIZE);
+    }
 
     use alloc::boxed::Box;
     let mut heap_test = Box::new(42);
@@ -357,6 +362,12 @@ pub fn calc_cpu_freq() -> usize {
 
 pub const HEAP_START: usize = 0o_000_001_000_000_0000;
 pub const HEAP_SIZE: usize = 100 * 1024; // 100 KiB
+//
+//#[global_allocator]
+//static HEAP_ALLOCATOR: BumpAllocator = BumpAllocator::new(HEAP_START, HEAP_START + HEAP_SIZE);
+
+
+use linked_list_allocator::LockedHeap;
 
 #[global_allocator]
-static HEAP_ALLOCATOR: BumpAllocator = BumpAllocator::new(HEAP_START, HEAP_START + HEAP_SIZE);
+static HEAP_ALLOCATOR: LockedHeap = LockedHeap::empty();
