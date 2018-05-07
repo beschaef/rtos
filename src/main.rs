@@ -46,6 +46,7 @@ extern crate rlibc;
 #[macro_use]
 extern crate once;
 extern crate linked_list_allocator;
+extern crate bit_field;
 
 use os_bootinfo::BootInfo;
 use vga_buffer::Color;
@@ -92,12 +93,19 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
 
     //interrupts::init();
 
-    memory::init(boot_info);
+    //memory::init(boot_info);
+
+    // set up guard page and map the heap pages
+    let mut memory_controller = memory::init(boot_info);
 
     unsafe {
         HEAP_ALLOCATOR.lock().init(HEAP_START, HEAP_START + HEAP_SIZE);
     }
 
+    // initialize our IDT
+    interrupts::init(&mut memory_controller);
+
+    /*
     use alloc::boxed::Box;
     let mut heap_test = Box::new(42);
     *heap_test -= 15;
@@ -109,9 +117,25 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
     for i in &vec_test {
         print!("{} ", i);
     }
+    */
 
-    init_clock();
-    uptime();
+    for i in 0..10000 {
+        format!("Some String");
+    }
+
+    // invoke a breakpoint exception
+    x86_64::instructions::interrupts::int3();
+
+    fn stack_overflow() {
+        stack_overflow();
+    }
+
+    // trigger a stack overflow
+    stack_overflow();
+    println!("It did not crash!");
+
+    //init_clock();
+    //uptime();
 
     loop {}
 }
