@@ -25,12 +25,14 @@
 #![feature(allocator_api)]
 #![feature(const_atomic_usize_new)]
 #![feature(global_allocator, heap_api)]
+#![feature(naked_functions)]
 
 #[macro_use]
 mod vga_buffer;
 mod interrupts;
 mod memory;
 mod features;
+mod thread;
 
 extern crate volatile;
 #[macro_use]
@@ -51,6 +53,7 @@ extern crate linked_list_allocator;
 extern crate bit_field;
 
 use os_bootinfo::BootInfo;
+use thread::Thread;
 
 //use memory::heap_allocator::BumpAllocator;
 
@@ -76,16 +79,13 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
         .check_version()
         .expect("Bootinfo version do not match");
 
-
-    vga_buffer::clear_screen();
-
-
     let cpuid = raw_cpuid::CpuId::new();
+    let mut memory_controller = memory::init(boot_info);
+
     println!("processor info {:?}", cpuid.get_processor_frequency_info());
     //    println!("hz {:?}", calc_cpu_freq());
 
-    // set up guard page and map the heap pages
-    let mut memory_controller = memory::init(boot_info);
+    vga_buffer::clear_screen();
 
     unsafe {
         HEAP_ALLOCATOR.lock().init(HEAP_START, HEAP_START + HEAP_SIZE);
@@ -96,15 +96,35 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
 
 
     // invoke a breakpoint exception
-    x86_64::instructions::interrupts::int3();
-
-    println!("dejavu");
-
-
+    //x86_64::instructions::interrupts::int3();
     // call interrupthandler 100
-//    unsafe {
-//        int!(132);
-//    }
+    //unsafe {
+    //    int!(132);
+    //}
+
+    let mut system_thread = Thread::new(1);
+    let mut clock1_thread = Thread::new(2);
+    //let mut clock2_thread = Thread::new(3);
+    clock1_thread.prepare(&mut system_thread, clock, 0);
+    //clock2_thread.prepare(&mut system_thread, clock, 1);
+
+
+    pub fn clock(prev_thread: &mut Thread, this_thread: &mut Thread, arg: usize) {
+        println!("{} before loop", arg);
+        loop {
+            println!("{} in loop", arg);
+            this_thread.switch_to(prev_thread);
+        }
+    }
+
+    loop {
+        system_thread.switch_to(&clock1_thread);
+        //system_thread.switch_to(&clock2_thread);
+        unsafe {
+            asm!("hlt" :::: "volatile");
+        }
+    }
+
 
     let clock = features::clock::Clock::new(0,0);
     clock.uptime();
