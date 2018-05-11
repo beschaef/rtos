@@ -11,6 +11,7 @@ lazy_static! {
         let mut idt = Idt::new();
         idt.breakpoint.set_handler_fn(breakpoint_handler);
         idt.double_fault.set_handler_fn(double_fault_handler);
+        idt.interrupts[100].set_handler_fn(interrupt_handler);
         unsafe {
             idt.double_fault.set_handler_fn(double_fault_handler)
                 .set_stack_index(DOUBLE_FAULT_IST_INDEX as u16);
@@ -69,4 +70,15 @@ extern "x86-interrupt" fn double_fault_handler(
 ) {
     println!("\nEXCEPTION: DOUBLE FAULT\n{:#?}", stack_frame);
     loop {}
+}
+
+extern "x86-interrupt" fn interrupt_handler(
+    stack_frame: &mut ExceptionStackFrame
+) {
+    //println!("\nEXCEPTION: Interrupt\n{:#?}", stack_frame);
+    println!("interrupt");
+    stack_frame.instruction_pointer = VirtualAddress(0x2134d5);
+    stack_frame.stack_pointer =  VirtualAddress(0x57ac001ffdf8);
+    stack_frame.cpu_flags = 0x246;
+
 }

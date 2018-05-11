@@ -40,6 +40,7 @@ extern crate spin;
 #[macro_use]
 extern crate bitflags;
 extern crate raw_cpuid;
+#[macro_use]
 extern crate x86_64;
 #[macro_use]
 extern crate alloc;
@@ -93,37 +94,23 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
     // initialize our IDT
     interrupts::init(&mut memory_controller);
 
-    /*
-    use alloc::boxed::Box;
-    let mut heap_test = Box::new(42);
-    *heap_test -= 15;
-    let heap_test2 = Box::new("hello");
-    println!("{:?} {:?}", heap_test, heap_test2);
-
-    let mut vec_test = vec![1,2,3,4,5,6,7];
-    vec_test[3] = 42;
-    for i in &vec_test {
-        print!("{} ", i);
-    }
-    */
-
-    for i in 0..10000 {
-        format!("Some String");
-    }
 
     // invoke a breakpoint exception
     x86_64::instructions::interrupts::int3();
 
-    fn stack_overflow() {
-        stack_overflow();
-    }
+    println!("dejavu");
 
-    // trigger a stack overflow
-    stack_overflow();
-    println!("It did not crash!");
 
-    let clock = features::clock::Clock::new();
+    // call interrupthandler 100
+//    unsafe {
+//        int!(132);
+//    }
+
+    let clock = features::clock::Clock::new(0,0);
     clock.uptime();
+
+    let clock2 = features::clock::Clock::new(0,71);
+    clock2.uptime();
 
 
     loop {}
