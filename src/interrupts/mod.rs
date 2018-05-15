@@ -10,7 +10,26 @@ lazy_static! {
     static ref IDT: Idt = {
         let mut idt = Idt::new();
         idt.breakpoint.set_handler_fn(breakpoint_handler);
-        idt.double_fault.set_handler_fn(double_fault_handler);
+        idt.divide_by_zero.set_handler_fn(divide_by_zero);
+        idt.debug.set_handler_fn(debug);
+        idt.non_maskable_interrupt.set_handler_fn(non_maskable_interrupt);
+        idt.overflow.set_handler_fn(overflow);
+        idt.bound_range_exceeded.set_handler_fn(bound_range_exceeded);
+        idt.invalid_opcode.set_handler_fn(invalid_opcode);
+        idt.device_not_available.set_handler_fn(device_not_available);
+        idt.invalid_tss.set_handler_fn(invalid_tss);
+        idt.segment_not_present.set_handler_fn(segment_not_present);
+        idt.stack_segment_fault.set_handler_fn(stack_segment_fault);
+        idt.general_protection_fault.set_handler_fn(general_protection_fault);
+        idt.page_fault.set_handler_fn(page_fault);
+        idt.x87_floating_point.set_handler_fn(x87_floating_point);
+
+        idt.virtualization.set_handler_fn(virtualization);
+        idt.security_exception.set_handler_fn(security_exception);
+        idt.simd_floating_point.set_handler_fn(simd_floating_point);
+        idt.machine_check.set_handler_fn(machine_check);
+        idt.alignment_check.set_handler_fn(alignment_check);
+
         idt.interrupts[100].set_handler_fn(interrupt_handler);
         unsafe {
             idt.double_fault.set_handler_fn(double_fault_handler)
@@ -69,6 +88,124 @@ extern "x86-interrupt" fn double_fault_handler(
     _error_code: u64,
 ) {
     println!("\nEXCEPTION: DOUBLE FAULT\n{:#?}", stack_frame);
+    loop {}
+}
+
+extern "x86-interrupt" fn divide_by_zero(
+    stack_frame: &mut ExceptionStackFrame)
+{
+    println!("EXCEPTION: divide_by_zero\n{:#?}", stack_frame);
+    loop {}
+}
+extern "x86-interrupt" fn debug(
+    stack_frame: &mut ExceptionStackFrame)
+{
+    println!("EXCEPTION: debug\n{:#?}", stack_frame);
+    loop {}
+}
+extern "x86-interrupt" fn non_maskable_interrupt(
+    stack_frame: &mut ExceptionStackFrame)
+{
+    println!("EXCEPTION: non_maskable_interrupt\n{:#?}", stack_frame);
+    loop {}
+}
+extern "x86-interrupt" fn overflow(
+    stack_frame: &mut ExceptionStackFrame)
+{
+    println!("EXCEPTION: overflow\n{:#?}", stack_frame);
+    loop {}
+}
+extern "x86-interrupt" fn bound_range_exceeded(
+    stack_frame: &mut ExceptionStackFrame)
+{
+    println!("EXCEPTION: bound_range_exceeded\n{:#?}", stack_frame);
+    loop {}
+}
+extern "x86-interrupt" fn invalid_opcode(
+    stack_frame: &mut ExceptionStackFrame)
+{
+    println!("EXCEPTION: invalid_opcode\n{:#?}", stack_frame);
+    loop {}
+}
+
+
+
+
+extern "x86-interrupt" fn device_not_available(
+    stack_frame: &mut ExceptionStackFrame)
+{
+    println!("EXCEPTION: device_not_available\n{:#?}", stack_frame);
+    loop {}
+}
+extern "x86-interrupt" fn invalid_tss(
+    stack_frame: &mut ExceptionStackFrame, _error_code: u64)
+{
+    println!("EXCEPTION: invalid_tss\n{:#?}", stack_frame);
+    loop {}
+}
+extern "x86-interrupt" fn segment_not_present(
+    stack_frame: &mut ExceptionStackFrame, _error_code: u64)
+{
+    println!("EXCEPTION: segment_not_present\n{:#?}", stack_frame);
+    loop {}
+}
+extern "x86-interrupt" fn stack_segment_fault(
+    stack_frame: &mut ExceptionStackFrame, _error_code: u64)
+{
+    println!("EXCEPTION: stack_segment_fault\n{:#?}", stack_frame);
+    loop {}
+}
+
+
+
+extern "x86-interrupt" fn general_protection_fault(
+    stack_frame: &mut ExceptionStackFrame, _error_code: u64)
+{
+    println!("EXCEPTION: general_protection_fault\n{:#?}", stack_frame);
+    loop {}
+}
+extern "x86-interrupt" fn page_fault(
+    stack_frame: &mut ExceptionStackFrame , _page_error_struct: PageFaultErrorCode)
+{
+    println!("EXCEPTION: page_fault\n{:#?}", stack_frame);
+    loop {}
+}
+extern "x86-interrupt" fn x87_floating_point(
+    stack_frame: &mut ExceptionStackFrame)
+{
+    println!("EXCEPTION: x87_floating_point\n{:#?}", stack_frame);
+    loop {}
+}
+
+extern "x86-interrupt" fn virtualization(
+    stack_frame: &mut ExceptionStackFrame)
+{
+    println!("EXCEPTION: virtualization\n{:#?}", stack_frame);
+    loop {}
+}
+extern "x86-interrupt" fn security_exception(
+    stack_frame: &mut ExceptionStackFrame, _error_code: u64)
+{
+    println!("EXCEPTION: security_exception\n{:#?}", stack_frame);
+    loop {}
+}
+extern "x86-interrupt" fn simd_floating_point(
+    stack_frame: &mut ExceptionStackFrame)
+{
+    println!("EXCEPTION: simd_floating_point\n{:#?}", stack_frame);
+    loop {}
+}
+extern "x86-interrupt" fn machine_check(
+    stack_frame: &mut ExceptionStackFrame)
+{
+    println!("EXCEPTION: machine_check\n{:#?}", stack_frame);
+    loop {}
+}
+
+extern "x86-interrupt" fn alignment_check(
+    stack_frame: &mut ExceptionStackFrame, _error_code: u64)
+{
+    println!("EXCEPTION: alignment_check\n{:#?}", stack_frame);
     loop {}
 }
 
