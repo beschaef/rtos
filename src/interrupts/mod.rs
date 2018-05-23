@@ -1,4 +1,5 @@
 use cpuio;
+use features::keyboard;
 use memory::MemoryController;
 use pic::ChainedPics;
 use spin::{Mutex, Once};
@@ -157,11 +158,12 @@ extern "x86-interrupt" fn timer_handler(stack_frame: &mut ExceptionStackFrame) {
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 extern "x86-interrupt" fn keyboard_handler(stack_frame: &mut ExceptionStackFrame) {
     unsafe {
-        let mut p = cpuio::UnsafePort::new(0x60);
-        let val: u8 = p.read();
-        println!("{:?}", val);
+        let mut scancode: u8 = cpuio::UnsafePort::new(0x60).read();
+        if let Some(c) = keyboard::from_scancode(scancode as usize) {
+            println!("{:?}", c);
+        }
     }
-    println!("handler 1");
+    //println!("handler 1");
     unsafe {
         PICS.lock().notify_end_of_interrupt(0x21 as u8);
     }
