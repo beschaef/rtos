@@ -1,14 +1,13 @@
-use vga_buffer::Color;
+use core::sync::atomic::{AtomicUsize, Ordering};
 use vga_buffer;
-use core::sync::atomic::{AtomicUsize,Ordering};
+use vga_buffer::Color;
 
-pub struct Clock{
+pub struct Clock {
     row: u8,
     col: u8,
 }
 
 impl Clock {
-
     pub fn new(row: u8, col: u8) -> Self {
         let color = Color::LightGreen;
         vga_buffer::write_at(":", row, col + 5, color);
@@ -19,13 +18,13 @@ impl Clock {
         vga_buffer::write_at("0", row, col + 4, color);
         vga_buffer::write_at("0", row, col + 6, color);
         vga_buffer::write_at("0", row, col + 7, color);
-        Clock{row,col}
+        Clock { row, col }
     }
 
     pub fn uptime(&self) {
         let color = Color::LightGreen;
         loop {
-            match vga_buffer::read_at(self.row as usize , (self.col + 7) as usize) {
+            match vga_buffer::read_at(self.row as usize, (self.col + 7) as usize) {
                 48 => vga_buffer::write_at("1", self.row, self.col + 7, color),
                 49 => vga_buffer::write_at("2", self.row, self.col + 7, color),
                 50 => vga_buffer::write_at("3", self.row, self.col + 7, color),
@@ -89,7 +88,10 @@ impl Clock {
 
     fn increase_hour(&self) {
         let color = Color::LightGreen;
-        match (vga_buffer::read_at(self.row as usize, self.col as usize), vga_buffer::read_at(self.row as usize, (self.col + 1) as usize)) {
+        match (
+            vga_buffer::read_at(self.row as usize, self.col as usize),
+            vga_buffer::read_at(self.row as usize, (self.col + 1) as usize),
+        ) {
             (48, 48) => vga_buffer::write_at("1", self.row, self.col + 1, color),
             (48, 49) => vga_buffer::write_at("2", self.row, self.col + 1, color),
             (48, 50) => vga_buffer::write_at("3", self.row, self.col + 1, color),
@@ -101,7 +103,7 @@ impl Clock {
             (48, 56) => vga_buffer::write_at("9", self.row, self.col + 1, color),
             (48, 57) => {
                 vga_buffer::write_at("0", self.row, self.col + 1, color);
-                vga_buffer::write_at("1", self.row,  self.col, color);
+                vga_buffer::write_at("1", self.row, self.col, color);
             }
             (49, 48) => vga_buffer::write_at("1", self.row, self.col + 1, color),
             (49, 49) => vga_buffer::write_at("2", self.row, self.col + 1, color),

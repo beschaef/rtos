@@ -1,5 +1,5 @@
-use x86_64::structures::tss::TaskStateSegment;
 use x86_64::structures::gdt::SegmentSelector;
+use x86_64::structures::tss::TaskStateSegment;
 use x86_64::PrivilegeLevel;
 
 pub struct Gdt {
@@ -39,8 +39,8 @@ impl Gdt {
     }
 
     pub fn load(&'static self) {
-        use x86_64::instructions::tables::{DescriptorTablePointer, lgdt};
         use core::mem::size_of;
+        use x86_64::instructions::tables::{lgdt, DescriptorTablePointer};
 
         let ptr = DescriptorTablePointer {
             base: self.table.as_ptr() as u64,
@@ -63,8 +63,8 @@ impl Descriptor {
     }
 
     pub fn tss_segment(tss: &'static TaskStateSegment) -> Descriptor {
-        use core::mem::size_of;
         use bit_field::BitField;
+        use core::mem::size_of;
 
         let ptr = tss as *const _ as u64;
 

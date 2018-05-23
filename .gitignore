@@ -2,3 +2,4 @@ bootimage.bin
 Cargo.lock
 /target/
 **/*.rs.bk
+rust-os-gdb/

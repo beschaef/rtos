@@ -1,7 +1,7 @@
 pub use self::entry::*;
 pub use self::mapper::Mapper;
 use self::temporary_page::TemporaryPage;
-use core::ops::{Deref, DerefMut, Add};
+use core::ops::{Add, Deref, DerefMut};
 use memory::Frame;
 use memory::PAGE_SIZE;
 
@@ -63,7 +63,9 @@ impl Add<usize> for Page {
     type Output = Page;
 
     fn add(self, rhs: usize) -> Page {
-        Page { number: self.number + rhs }
+        Page {
+            number: self.number + rhs,
+        }
     }
 }
 
@@ -78,7 +80,7 @@ impl Iterator for PageIter {
 
     fn next(&mut self) -> Option<Page> {
         if self.start <= self.end {
-            let page= self.start.clone();
+            let page = self.start.clone();
             self.start.number += 1;
             Some(page)
         } else {

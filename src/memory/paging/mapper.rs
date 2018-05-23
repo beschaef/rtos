@@ -115,8 +115,8 @@ impl Mapper {
     where
         A: FrameAllocator,
     {
-        use x86_64::VirtualAddress;
         use x86_64::instructions::tlb;
+        use x86_64::VirtualAddress;
 
         assert!(self.translate(page.start_address()).is_some());
 
