@@ -1,8 +1,11 @@
-use x86_64::structures::idt::{ExceptionStackFrame, Idt};
+use cpuio;
+use features::keyboard;
+use memory::MemoryController;
+use pic::ChainedPics;
+use spin::{Mutex, Once};
+use x86_64::structures::idt::{ExceptionStackFrame, Idt, PageFaultErrorCode};
 use x86_64::structures::tss::TaskStateSegment;
 use x86_64::VirtualAddress;
-use memory::MemoryController;
-use spin::Once;
 
 mod gdt;
 
@@ -30,9 +33,14 @@ lazy_static! {
         idt.machine_check.set_handler_fn(machine_check);
         idt.alignment_check.set_handler_fn(alignment_check);
 
-        idt.interrupts[100].set_handler_fn(interrupt_handler);
+        idt.interrupts[0].set_handler_fn(timer_handler);
+        idt.interrupts[1].set_handler_fn(keyboard_handler);
+        idt.interrupts[2].set_handler_fn(handler_2);
+        idt.interrupts[3].set_handler_fn(handler_3);
+        idt.interrupts[4].set_handler_fn(handler_4);
         unsafe {
-            idt.double_fault.set_handler_fn(double_fault_handler)
+            idt.double_fault
+                .set_handler_fn(double_fault_handler)
                 .set_stack_index(DOUBLE_FAULT_IST_INDEX as u16);
         }
         idt
@@ -44,18 +52,21 @@ static GDT: Once<gdt::Gdt> = Once::new();
 
 const DOUBLE_FAULT_IST_INDEX: usize = 0;
 
+static PICS: Mutex<ChainedPics> = Mutex::new(unsafe { ChainedPics::new(0x20, 0xA0) });
+
 pub fn init(memory_controller: &mut MemoryController) {
-    use x86_64::structures::gdt::SegmentSelector;
     use x86_64::instructions::segmentation::set_cs;
     use x86_64::instructions::tables::load_tss;
+    use x86_64::structures::gdt::SegmentSelector;
 
-    let double_fault_stack = memory_controller.alloc_stack(1)
+    let double_fault_stack = memory_controller
+        .alloc_stack(1)
         .expect("could not allocate double fault stack");
 
     let tss = TSS.call_once(|| {
         let mut tss = TaskStateSegment::new();
-        tss.interrupt_stack_table[DOUBLE_FAULT_IST_INDEX] = VirtualAddress(
-            double_fault_stack.top());
+        tss.interrupt_stack_table[DOUBLE_FAULT_IST_INDEX] =
+            VirtualAddress(double_fault_stack.top());
         tss
     });
 
@@ -74,13 +85,47 @@ pub fn init(memory_controller: &mut MemoryController) {
         set_cs(code_selector);
         // load TSS
         load_tss(tss_selector);
+
+        PICS.lock().initialize();
     }
 
     IDT.load();
 }
 
+pub fn init_timer() {
+    unsafe {
+        println!("init timer");
+        asm!("
+           cli
+           mov  al,34h
+           out  43h,al
+
+           nop
+           nop
+
+           mov  rcx,10000
+
+           mov  al,cl
+           out  40h,al
+           nop
+           nop
+           mov  al,ch
+           out  40h,al
+           nop
+           nop
+
+           sti
+           hlt
+
+
+            "
+            :::: "intel","volatile");
+    }
+    println!("never read this!!!");
+}
+
 extern "x86-interrupt" fn breakpoint_handler(stack_frame: &mut ExceptionStackFrame) {
-    println!("EXCEPTION: BREAKPOINT\n{:#?}", stack_frame);
+    println!("KRASSE EXCEPTION: BREAKPOINT\n{:#?}", stack_frame);
 }
 
 extern "x86-interrupt" fn double_fault_handler(
@@ -209,13 +254,57 @@ extern "x86-interrupt" fn alignment_check(
     loop {}
 }
 
-extern "x86-interrupt" fn interrupt_handler(
-    stack_frame: &mut ExceptionStackFrame
-) {
-    //println!("\nEXCEPTION: Interrupt\n{:#?}", stack_frame);
-    println!("interrupt");
-    stack_frame.instruction_pointer = VirtualAddress(0x2134d5);
-    stack_frame.stack_pointer =  VirtualAddress(0x57ac001ffdf8);
-    stack_frame.cpu_flags = 0x246;
+pub fn trigger_test_interrupt() {
+    println!("Triggering interrupt");
+    unsafe {
+        int!(0x20);
+    }
+    println!("Interrupt returned!");
+}
 
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+extern "x86-interrupt" fn timer_handler(stack_frame: &mut ExceptionStackFrame) {
+    //println!("timer_handler");
+
+    //reset timer
+    unsafe {
+        asm!("
+                mov al, 0x34
+                out 0x43, al
+
+                mov rcx, 10000
+                mov al, cl
+                out 0x40, al
+                mov al, ch
+                out 0x40, al
+
+
+            "::::"intel", "volatile");
+
+        PICS.lock().notify_end_of_interrupt(0x20 as u8);
+    }
+}
+
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+extern "x86-interrupt" fn keyboard_handler(stack_frame: &mut ExceptionStackFrame) {
+    unsafe {
+        let mut scancode: u8 = cpuio::UnsafePort::new(0x60).read();
+        if let Some(c) = keyboard::from_scancode(scancode as usize) {
+            println!("{:?}", c);
+        }
+    }
+    //println!("handler 1");
+    unsafe {
+        PICS.lock().notify_end_of_interrupt(0x21 as u8);
+    }
+}
+
+extern "x86-interrupt" fn handler_2(stack_frame: &mut ExceptionStackFrame) {
+    println!("handler 2");
+}
+extern "x86-interrupt" fn handler_3(stack_frame: &mut ExceptionStackFrame) {
+    println!("handler 3");
+}
+extern "x86-interrupt" fn handler_4(stack_frame: &mut ExceptionStackFrame) {
+    println!("handler 4");
 }

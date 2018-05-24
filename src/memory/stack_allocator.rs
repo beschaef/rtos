@@ -1,6 +1,6 @@
 use memory::paging::PageIter;
-use memory::paging::{self, Page, ActivePageTable};
-use memory::{PAGE_SIZE, FrameAllocator};
+use memory::paging::{self, ActivePageTable, Page};
+use memory::{FrameAllocator, PAGE_SIZE};
 
 pub struct StackAllocator {
     range: PageIter,
@@ -8,16 +8,17 @@ pub struct StackAllocator {
 
 impl StackAllocator {
     pub fn new(page_range: PageIter) -> StackAllocator {
-        StackAllocator { range: page_range}
+        StackAllocator { range: page_range }
     }
 }
 
 impl StackAllocator {
-    pub fn alloc_stack<FA: FrameAllocator>(&mut self,
-                                           active_table: &mut ActivePageTable,
-                                           frame_allocator: &mut FA,
-                                           size_in_pages: usize)
-                                           -> Option<Stack> {
+    pub fn alloc_stack<FA: FrameAllocator>(
+        &mut self,
+        active_table: &mut ActivePageTable,
+        frame_allocator: &mut FA,
+        size_in_pages: usize,
+    ) -> Option<Stack> {
         if size_in_pages == 0 {
             return None; /* a zero sized stack makes no sense */
         }

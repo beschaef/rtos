@@ -1,5 +1,5 @@
-use super::Page;
 use super::table::{Level1, Table};
+use super::Page;
 use super::{ActivePageTable, VirtualAddress};
 use memory::Frame;
 use memory::FrameAllocator;
