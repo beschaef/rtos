@@ -92,14 +92,16 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
 
     // initialize our IDT
     interrupts::init(&mut memory_controller);
+    unsafe {
+        x86_64::instructions::interrupts::disable();
+    }
 
     // invoke a breakpoint exception
     //x86_64::instructions::interrupts::int3();
 
-    unsafe {
-        x86_64::instructions::interrupts::enable();
-    }
-    interrupts::trigger_test_interrupt();
+
+    //interrupts::trigger_test_interrupt();
+    scheduler::sched_init(&mut memory_controller);
     interrupts::init_timer();
     println!("after initialization of timer");
 
