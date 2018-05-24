@@ -1,5 +1,4 @@
 all:
-	$(MAKE) clean
 	$(MAKE) build
 	$(MAKE) run
 

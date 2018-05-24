@@ -46,10 +46,10 @@ impl Clock {
                             vga_buffer::write_at("0", self.row, self.col + 6, color);
                             self.increase_minute();
                         }
-                        _ => vga_buffer::write_at("X", self.row, self.col + 6, color),
+                        _ => vga_buffer::write_at("0", self.row, self.col + 6, color),
                     }
                 }
-                _ => vga_buffer::write_at("X", self.row, self.col + 7, color),
+                _ => vga_buffer::write_at("0", self.row, self.col + 7, color),
             }
             self.sleep();
         }
@@ -79,10 +79,10 @@ impl Clock {
                         vga_buffer::write_at("0", self.row, self.col + 3, color);
                         self.increase_hour();
                     }
-                    _ => vga_buffer::write_at("X", self.row, self.col + 3, color),
+                    _ => vga_buffer::write_at("0", self.row, self.col + 3, color),
                 }
             }
-            _ => vga_buffer::write_at("X", self.row, self.col + 4, color),
+            _ => vga_buffer::write_at("0", self.row, self.col + 4, color),
         }
     }
 
@@ -125,7 +125,7 @@ impl Clock {
             (50, 48) => vga_buffer::write_at("1", self.row, self.col + 1, color),
             (50, 49) => vga_buffer::write_at("2", self.row, self.col + 1, color),
             (50, 50) => vga_buffer::write_at("3", self.row, self.col + 1, color),
-            _ => vga_buffer::write_at("X", self.row, self.col + 1, color),
+            _ => vga_buffer::write_at("0", self.row, self.col + 1, color),
         }
     }
 

@@ -6,6 +6,7 @@ use spin::{Mutex, Once};
 use x86_64::structures::idt::{ExceptionStackFrame, Idt, PageFaultErrorCode};
 use x86_64::structures::tss::TaskStateSegment;
 use x86_64::VirtualAddress;
+use scheduler::schedule;
 
 mod gdt;
 
@@ -266,6 +267,8 @@ pub fn trigger_test_interrupt() {
 extern "x86-interrupt" fn timer_handler(stack_frame: &mut ExceptionStackFrame) {
     //println!("timer_handler");
 
+    schedule(stack_frame);
+
     //reset timer
     unsafe {
         asm!("
@@ -291,6 +294,9 @@ extern "x86-interrupt" fn keyboard_handler(stack_frame: &mut ExceptionStackFrame
         let mut scancode: u8 = cpuio::UnsafePort::new(0x60).read();
         if let Some(c) = keyboard::from_scancode(scancode as usize) {
             println!("{:?}", c);
+            if c == 'h' {
+                loop{}
+            }
         }
     }
     //println!("handler 1");

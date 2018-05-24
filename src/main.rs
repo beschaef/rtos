@@ -33,6 +33,7 @@ mod features;
 mod interrupts;
 mod memory;
 mod pic;
+mod scheduler;
 
 extern crate volatile;
 #[macro_use]
