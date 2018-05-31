@@ -4,6 +4,7 @@
 use core::fmt::{Arguments, Result, Write};
 use spin::Mutex;
 use volatile::Volatile;
+use x86_64;
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy)]
@@ -169,7 +170,13 @@ pub fn write(str: &str) {
 }
 
 pub fn write_at(str: &str, row: u8, col: u8, color: Color) {
+    unsafe {
+        x86_64::instructions::interrupts::disable();
+    }
     WRITER.lock().write_at(str, row, col, color);
+    unsafe {
+        x86_64::instructions::interrupts::enable();
+    }
 }
 
 pub fn clear_screen() {

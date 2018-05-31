@@ -108,7 +108,7 @@ pub fn init_timer() {
            nop
            nop
 
-           mov  rcx,10000
+           mov  rcx,60000
 
            mov  al,cl
            out  40h,al
@@ -254,7 +254,7 @@ extern "x86-interrupt" fn timer_handler(stack_frame: &mut ExceptionStackFrame) {
                 mov al, 0x34
                 out 0x43, al
 
-                mov rcx, 100000
+                mov rcx, 60000
                 mov al, cl
                 out 0x40, al
                 mov al, ch
