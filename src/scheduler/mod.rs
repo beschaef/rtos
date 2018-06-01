@@ -11,7 +11,7 @@ use x86_64;
 use x86_64::structures::idt::{ExceptionStackFrame, Idt, PageFaultErrorCode};
 use x86_64::structures::tss::TaskStateSegment;
 use x86_64::VirtualAddress;
-
+use HEAP_ALLOCATOR;
 
 pub struct TaskData {
     cpu_flags: u64,
@@ -48,7 +48,7 @@ lazy_static! {
 }
 
 pub fn sched_init(memory_controller: &mut MemoryController) {
-    let memory = memory_controller.alloc_stack(8).expect("Ooopsie");
+    let memory = memory_controller.alloc_stack(2).expect("Ooopsie");
     TASKS.lock().insert(
         0,
         TaskData::new(
@@ -59,7 +59,7 @@ pub fn sched_init(memory_controller: &mut MemoryController) {
             1,
         ),
     );
-    let memory = memory_controller.alloc_stack(8).expect("Ooopsie");
+    let memory = memory_controller.alloc_stack(2).expect("Ooopsie");
     TASKS.lock().insert(
         0,
         TaskData::new(
@@ -79,7 +79,11 @@ pub fn uptime1() {
     loop {
         l = (l +1) %5;
         r = (r +1) %9;
-
+        let color = Color::LightGreen;
+//        unsafe {
+//            let speicher = HEAP_ALLOCATOR.alloc(&format!("{}",r));
+//            vga_buffer::write_at(speicher, 0, 0 + 7, color);
+//        }
         match r {
             0 => vga_buffer::write_at("1", 0, 0 + 7, color),
             1 => vga_buffer::write_at("2", 0, 0 + 7, color),
@@ -90,20 +94,7 @@ pub fn uptime1() {
             6 => vga_buffer::write_at("7", 0, 0 + 7, color),
             7 => vga_buffer::write_at("8", 0, 0 + 7, color),
             8 => vga_buffer::write_at("9", 0, 0 + 7, color),
-            9 => {
-                vga_buffer::write_at("0", 0, 0 + 7, color);
-                match l {
-                    0 => vga_buffer::write_at("1", 0, 0 + 6, color),
-                    1 => vga_buffer::write_at("2", 0, 0 + 6, color),
-                    2 => vga_buffer::write_at("3", 0, 0 + 6, color),
-                    3 => vga_buffer::write_at("4", 0, 0 + 6, color),
-                    4 => vga_buffer::write_at("5", 0, 0 + 6, color),
-                    5 => {
-                        vga_buffer::write_at("0", 0, 0 + 6, color);
-                    }
-                    _ => vga_buffer::write_at("0", 0, 0 + 6, color),
-                }
-            }
+            9 => vga_buffer::write_at("0", 0, 0 + 7, color),
             _ => vga_buffer::write_at("0", 0, 0 + 7, color),
         }
     }
@@ -113,8 +104,22 @@ pub fn uptime2() {
     let mut l = -1;
     let mut r = -1;
     loop {
-        l = (l + 1) %  9;
-        //vga_buffer::write_at("2", 2, 0 + 7, color);
+        l = (l +1) %5;
+//        r = (r +1) %9;
+//        let color = Color::LightGreen;
+//        match r {
+//            0 => vga_buffer::write_at("1", 2, 0 + 7, color),
+//            1 => vga_buffer::write_at("2", 2, 0 + 7, color),
+//            2 => vga_buffer::write_at("3", 2, 0 + 7, color),
+//            3 => vga_buffer::write_at("4", 2, 0 + 7, color),
+//            4 => vga_buffer::write_at("5", 2, 0 + 7, color),
+//            5 => vga_buffer::write_at("6", 2, 0 + 7, color),
+//            6 => vga_buffer::write_at("7", 2, 0 + 7, color),
+//            7 => vga_buffer::write_at("8", 2, 0 + 7, color),
+//            8 => vga_buffer::write_at("9", 2, 0 + 7, color),
+//            9 => vga_buffer::write_at("0", 2, 0 + 7, color),
+//            _ => vga_buffer::write_at("0", 2, 0 + 7, color),
+//        }
     }
 }
 

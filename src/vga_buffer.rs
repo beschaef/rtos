@@ -173,7 +173,10 @@ pub fn write_at(str: &str, row: u8, col: u8, color: Color) {
     unsafe {
         x86_64::instructions::interrupts::disable();
     }
-    WRITER.lock().write_at(str, row, col, color);
+    {
+        let mut locked = WRITER.lock();
+        locked.write_at(str, row, col, color);
+    }
     unsafe {
         x86_64::instructions::interrupts::enable();
     }
