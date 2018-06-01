@@ -265,9 +265,7 @@ extern "x86-interrupt" fn timer_handler(stack_frame: &mut ExceptionStackFrame) {
         asm!("":"={rax}"(rax),"={rbx}"(rbx),"={rdx}"(rdx),"={rbp}"(rbp),"={rsi}"(rsi),"={rdi}"(rdi),"={r8}"(r8),"={r9}"(r9),"={r10}"(r10),"={r11}"(r11),"={r12}"(r12),"={r13}"(r13),"={r14}"(r14),"={r15}"(r15):::"intel","volatile");
     }
 
-        schedule(stack_frame);
-
-
+    schedule(stack_frame);
 
     //reset timer
     unsafe {
