@@ -84,7 +84,7 @@ impl Writer {
         for byte in str.bytes() {
             self.buffer.chars[row as usize][col as usize].write(ScreenChar {
                 ascii_character: byte,
-                color_code: ColorCode::new(color, Color::Black),
+                color_code: ColorCode::new(color, Color::Brown),
             });
         }
     }
@@ -143,7 +143,7 @@ impl Write for Writer {
 lazy_static! {
     pub static ref WRITER: Mutex<Writer> = Mutex::new(Writer {
         column_position: 0,
-        color_code: ColorCode::new(Color::Cyan, Color::Black),
+        color_code: ColorCode::new(Color::Cyan, Color::Brown),
         buffer: unsafe { &mut *(0xb8000 as *mut Buffer) },
     });
 }

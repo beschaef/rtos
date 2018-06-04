@@ -75,16 +75,23 @@ pub fn sched_init(memory_controller: &mut MemoryController) {
 pub fn uptime1() {
     let color = Color::LightGreen;
     let mut r = 0;
-    let mut y = 0;
+    let mut x = 0;
     loop {
-        y = (y+1) % 10_000_000;
-        if y == 1000 {
+        x = (x + 1) % 10000000;
+
+//        unsafe {
+//            let speicher = HEAP_ALLOCATOR.alloc(&format!("{}",r));
+//            vga_buffer::write_at(speicher, 0, 0 + 7, color);
+//        }
+        if x == 100 {
+
+            //<-- nach sched
+
             r = (r +1) %9;
+
+            // <--- vor sched
+
             let color = Color::LightGreen;
-    //        unsafe {
-    //            let speicher = HEAP_ALLOCATOR.alloc(&format!("{}",r));
-    //            vga_buffer::write_at(speicher, 0, 0 + 7, color);
-    //        }
             match r {
                 0 => vga_buffer::write_at("1", 0, 0 + 7, color),
                 1 => vga_buffer::write_at("2", 0, 0 + 7, color),

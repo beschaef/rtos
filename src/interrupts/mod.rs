@@ -108,7 +108,7 @@ pub fn init_timer() {
            nop
            nop
 
-           mov  rcx,60000
+           mov  rcx,10000
 
            mov  al,cl
            out  40h,al

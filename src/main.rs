@@ -55,6 +55,7 @@ extern crate cpuio;
 extern crate linked_list_allocator;
 
 use os_bootinfo::BootInfo;
+use features::{calc_freq,get_cpu_freq};
 
 //use memory::heap_allocator::BumpAllocator;
 
@@ -95,6 +96,8 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
     unsafe {
         x86_64::instructions::interrupts::disable();
     }
+    let freq = get_cpu_freq();
+    println!("freq: {}", freq);
 
     // invoke a breakpoint exception
     //x86_64::instructions::interrupts::int3();
@@ -114,127 +117,6 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
     */
 
     loop {}
-}
-
-/// Funktion von Daniel und Johannes (wird als Referenz genutzt)
-pub fn calc_cpu_freq() -> usize {
-    unsafe {
-        /// I 59659 =  20hz
-        const SIZE: usize = 10;
-        let mut i = SIZE;
-        let mut array: [usize; SIZE] = [0; SIZE];
-
-        loop {
-            i -= 1;
-            asm!("
-
-            mov  al,34h
-            out  43h,al
-
-            nop
-            nop
-
-            mov  rcx,65000
-
-            mov  al,cl
-            out  40h,al
-            nop
-            nop
-            mov  al,ch
-            out  40h,al
-            nop
-            nop"
-        :::: "intel","volatile");
-
-            let pit0: usize;
-            let pit1: usize;
-            let tsc0h: usize;
-            let tsc0l: usize;
-            let tsc1h: usize;
-            let tsc1l: usize;
-            asm!("
-
-            and rax, 0
-            mov     al,0h
-            out     43h,al
-            in      al,40h
-            mov     ah,al
-            in      al,40h
-            rol     ax,8
-
-            push rax
-            pop $0
-            rdtsc
-
-            push rax
-            pop $1
-            push rdx
-            pop $2
-
-        loop:
-            pause
-            and rax, 0
-            mov     al,0h
-            out     43h,al
-            in      al,40h
-            mov     ah,al
-            in      al,40h
-            rol     ax,8
-            cmp rax, 5000
-            jge loop
-
-            and rax, 0
-            mov     al,0h
-            out     43h,al
-            in      al,40h
-            mov     ah,al
-            in      al,40h
-            rol     ax,8
-
-            push rax
-            pop $3
-
-            rdtsc
-            mov    $4,rax
-            mov    $5,rdx
-
-            ":"=r"(pit0),"=r"(tsc0l),"=r"(tsc0h),"=r"(pit1),"=r"(tsc1l), "=r"(tsc1h)::"rax", "rdx", "rbx":"intel","volatile");
-
-            //~ continue;
-            if pit1 >= pit0 {
-                print!("Pit0 {}, hex--> {0:X}", pit0);
-                println!("                  Pit1 {}, hex--> {0:X} Count {}", pit1, i);
-                i += 1;
-                continue;
-            }
-
-            let tsc0 = tsc0h << 32 | tsc0l;
-            let tsc1 = tsc1h << 32 | tsc1l;
-
-            if tsc0 >= tsc1 {
-                print!("TSC0 {}", tsc0);
-                println!("     tsc1 {} Count {}", tsc1, i);
-                i += 1;
-                continue;
-            }
-
-            let diff_pit = pit0 - pit1;
-
-            let diff_tsc = tsc1 - tsc0;
-            let precision = 1000_000_000;
-            let time_in_pit = (diff_pit * precision) / 1193181;
-
-            let hz = (diff_tsc * precision) / time_in_pit;
-            array[i] = hz;
-            if i == 0 {
-                break;
-            }
-        }
-        //array.sort();
-        let median: usize = array.len() / 2;
-        let cpu_freq = array[median];
-        return cpu_freq;
-    }
 }
 
 pub const HEAP_START: usize = 0o_000_001_000_000_0000;
