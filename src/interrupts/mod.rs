@@ -131,7 +131,9 @@ pub fn init_timer() {
 
 extern "x86-interrupt" fn breakpoint_handler(stack_frame: &mut ExceptionStackFrame) {
     println!("KRASSE EXCEPTION: BREAKPOINT\n{:#?}", stack_frame);
-    unsafe{PICS.lock().notify_end_of_interrupt(0x03 as u8);}
+    unsafe {
+        PICS.lock().notify_end_of_interrupt(0x03 as u8);
+    }
 }
 
 extern "x86-interrupt" fn double_fault_handler(
@@ -246,20 +248,20 @@ pub fn trigger_test_interrupt() {
 extern "x86-interrupt" fn timer_handler(stack_frame: &mut ExceptionStackFrame) {
     //println!("timer_handler");
 
-    let rax:usize;
-    let rbx:usize;
-    let rdx:usize;
-    let rbp:usize;
-    let rsi:usize;
-    let rdi:usize;
-    let r8:usize;
-    let r9:usize;
-    let r10:usize;
-    let r11:usize;
-    let r12:usize;
-    let r13:usize;
-    let r14:usize;
-    let r15:usize;
+    let rax: usize;
+    let rbx: usize;
+    let rdx: usize;
+    let rbp: usize;
+    let rsi: usize;
+    let rdi: usize;
+    let r8: usize;
+    let r9: usize;
+    let r10: usize;
+    let r11: usize;
+    let r12: usize;
+    let r13: usize;
+    let r14: usize;
+    let r15: usize;
     unsafe {
         //backup register
         asm!("":"={rax}"(rax),"={rbx}"(rbx),"={rdx}"(rdx),"={rbp}"(rbp),"={rsi}"(rsi),"={rdi}"(rdi),"={r8}"(r8),"={r9}"(r9),"={r10}"(r10),"={r11}"(r11),"={r12}"(r12),"={r13}"(r13),"={r14}"(r14),"={r15}"(r15):::"intel","volatile");
@@ -282,7 +284,7 @@ extern "x86-interrupt" fn timer_handler(stack_frame: &mut ExceptionStackFrame) {
 
             "::::"intel", "volatile");
 
-        asm!(""::"{rax}"(rax),"{rbx}"(rbx),"{rdx}"(rdx),"{rbp}"(rbp),"{rsi}"(rsi),"{rdi}"(rdi),"{r8}"(r8),"{r9}"(r9),"{r10}"(r10),"{r11}"(r11),"{r12}"(r12),"{r13}"(r13),"{r14}"(r14),"{r15}"(r15):::"intel","volatile") ;
+        asm!(""::"{rax}"(rax),"{rbx}"(rbx),"{rdx}"(rdx),"{rbp}"(rbp),"{rsi}"(rsi),"{rdi}"(rdi),"{r8}"(r8),"{r9}"(r9),"{r10}"(r10),"{r11}"(r11),"{r12}"(r12),"{r13}"(r13),"{r14}"(r14),"{r15}"(r15):::"intel","volatile");
 
         PICS.lock().notify_end_of_interrupt(0x20 as u8);
     }

@@ -54,8 +54,8 @@ extern crate bit_field;
 extern crate cpuio;
 extern crate linked_list_allocator;
 
+use features::{calc_freq, get_cpu_freq};
 use os_bootinfo::BootInfo;
-use features::{calc_freq,get_cpu_freq};
 
 //use memory::heap_allocator::BumpAllocator;
 
@@ -102,7 +102,6 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
     // invoke a breakpoint exception
     //x86_64::instructions::interrupts::int3();
 
-
     //interrupts::trigger_test_interrupt();
     scheduler::sched_init(&mut memory_controller);
     interrupts::init_timer();
@@ -120,7 +119,7 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
 }
 
 pub const HEAP_START: usize = 0o_000_001_000_000_0000;
-pub const HEAP_SIZE : usize = 100 * 1024; // 100 KiB
+pub const HEAP_SIZE: usize = 100 * 1024; // 100 KiB
                                          //
                                          //#[global_allocator]
                                          //static HEAP_ALLOCATOR: BumpAllocator = BumpAllocator::new(HEAP_START, HEAP_START + HEAP_SIZE);

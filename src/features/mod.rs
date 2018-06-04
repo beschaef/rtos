@@ -3,7 +3,7 @@ pub mod keyboard;
 
 use x86_64;
 
-static mut CPU_FREQ : usize = 0;
+static mut CPU_FREQ: usize = 0;
 
 /// Wird genutzt um die cpu_frequenz zu berechnen.
 /// Code ist angelehnt an https://wiki.osdev.org/Detecting_CPU_Speed
@@ -42,7 +42,6 @@ pub fn calc_freq() -> usize {
             //        asm!("
             //                out 0x43, 0x04");
 
-
             asm!(""::"{rcx}"(lo),"{rcx}"(hi));
         }
         let ticks: usize = (0x7300 - ((hi * 256) + lo));
@@ -59,21 +58,15 @@ pub fn calc_freq() -> usize {
         freq += *x;
     }
 
-    return freq/array.len();
+    return freq / array.len();
 }
 
 pub fn get_cpu_freq() -> u64 {
-
-    unsafe{
-
-
+    unsafe {
         if CPU_FREQ == 0 {
-
             calc_freq();
             CPU_FREQ = calc_freq();
-
         }
         CPU_FREQ as u64
-
     }
 }

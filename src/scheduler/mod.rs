@@ -35,13 +35,11 @@ impl TaskData {
     }
 
     pub const fn dummy() -> Self {
-        TaskData::new(0,x86_64::VirtualAddress(0),x86_64::VirtualAddress(0),
-        0,
-        )
+        TaskData::new(0, x86_64::VirtualAddress(0), x86_64::VirtualAddress(0), 0)
     }
 }
 
-pub static mut RUNNING_TASK: Mutex<TaskData> =  Mutex::new(TaskData::dummy());
+pub static mut RUNNING_TASK: Mutex<TaskData> = Mutex::new(TaskData::dummy());
 lazy_static! {
     static ref TASKS: Mutex<Vec<TaskData>> = Mutex::new(vec![]);
     static ref NO_MAIN: u8 = 0;
@@ -55,7 +53,6 @@ pub fn sched_init(memory_controller: &mut MemoryController) {
             0,
             x86_64::VirtualAddress(memory.top()),
             x86_64::VirtualAddress(uptime1 as usize),
-
             1,
         ),
     );
@@ -66,7 +63,6 @@ pub fn sched_init(memory_controller: &mut MemoryController) {
             0,
             x86_64::VirtualAddress(memory.top()),
             x86_64::VirtualAddress(uptime2 as usize),
-
             1,
         ),
     );
@@ -79,15 +75,14 @@ pub fn uptime1() {
     loop {
         x = (x + 1) % 10000000;
 
-//        unsafe {
-//            let speicher = HEAP_ALLOCATOR.alloc(&format!("{}",r));
-//            vga_buffer::write_at(speicher, 0, 0 + 7, color);
-//        }
+        //        unsafe {
+        //            let speicher = HEAP_ALLOCATOR.alloc(&format!("{}",r));
+        //            vga_buffer::write_at(speicher, 0, 0 + 7, color);
+        //        }
         if x == 100 {
-
             //<-- nach sched
 
-            r = (r +1) %9;
+            r = (r + 1) % 9;
 
             // <--- vor sched
 
@@ -113,9 +108,9 @@ pub fn uptime2() {
     let mut l = -1;
     let mut x = 0;
     loop {
-        x = (x+1) % 10_000_000;
+        x = (x + 1) % 10_000_000;
         if x == 1000 {
-            l = (l +1) %9;
+            l = (l + 1) % 9;
             let color = Color::LightGreen;
             match l {
                 0 => vga_buffer::write_at("1", 2, 0 + 7, color),
@@ -141,12 +136,7 @@ pub fn schedule(f: &mut ExceptionStackFrame) {
     let running = TASKS.lock().pop().unwrap();
     unsafe {
         if RUNNING_TASK.lock().status != 0 {
-            let old = TaskData::new(
-                cpuflags,
-                stackpointer,
-                instructionpointer,
-                running.status,
-            );
+            let old = TaskData::new(cpuflags, stackpointer, instructionpointer, running.status);
             TASKS.lock().insert(0, old);
         }
         f.stack_pointer = running.stack_pointer;
