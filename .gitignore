@@ -4,3 +4,4 @@ Cargo.lock
 **/*.rs.bk
 rust-os-gdb/
 .idea/
+TRACE_*

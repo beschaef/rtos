@@ -15,7 +15,7 @@ impl Trace {
 
     pub fn write(&mut self, fn_name: &str, info_text: &str) {
         let ts = rdtsc();
-        for x in format!("{:20?} - {:20?} - {:?}\n",fn_name,ts, info_text).bytes() {
+        for x in format!("{:<20} - {:20?} - {:?}\n",fn_name,ts, info_text).bytes() {
             unsafe{
                 UnsafePort::new(0x03f8).write(x);
             }
