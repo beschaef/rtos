@@ -13,7 +13,7 @@ fmt:
 	cargo fmt
 
 run:
-	@qemu-system-x86_64 -drive format=raw,file=bootimage.bin -m 1024M
+	@qemu-system-x86_64 -drive format=raw,file=bootimage.bin -m 1024M -serial file:test.file
 
 debug:
 	@qemu-system-x86_64 -drive format=raw,file=bootimage.bin -s -S

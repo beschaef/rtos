@@ -1,7 +1,9 @@
 pub mod clock;
 pub mod keyboard;
+pub mod trace;
 
 use x86_64;
+use cpuio;
 
 static mut CPU_FREQ: usize = 0;
 
@@ -9,7 +11,7 @@ static mut CPU_FREQ: usize = 0;
 /// Code ist angelehnt an https://wiki.osdev.org/Detecting_CPU_Speed
 /// Unterliegt aktuell noch Schwankungen um die 15%
 ///
-pub fn calc_freq() -> usize {
+fn calc_freq() -> usize {
     unsafe {
         x86_64::instructions::interrupts::disable();
     }

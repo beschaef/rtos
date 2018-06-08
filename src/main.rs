@@ -54,7 +54,8 @@ extern crate bit_field;
 extern crate cpuio;
 extern crate linked_list_allocator;
 
-use features::{calc_freq, get_cpu_freq};
+use features::{get_cpu_freq};
+use features::trace::*;
 use os_bootinfo::BootInfo;
 
 //use memory::heap_allocator::BumpAllocator;
@@ -97,6 +98,8 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
         x86_64::instructions::interrupts::disable();
     }
     let freq = get_cpu_freq();
+    trace_info("main","text");
+
     println!("freq: {}", freq);
 
     // invoke a breakpoint exception
