@@ -1,3 +1,5 @@
+TIME=$(shell date --iso=seconds)
+
 all:
 	$(MAKE) build
 	$(MAKE) run
@@ -13,7 +15,7 @@ fmt:
 	cargo fmt
 
 run:
-	@qemu-system-x86_64 -drive format=raw,file=bootimage.bin -m 1024M -serial file:test.file
+	@qemu-system-x86_64 -drive format=raw,file=bootimage.bin -m 1024M -serial file:TRACE_$(TIME)
 
 debug:
 	@qemu-system-x86_64 -drive format=raw,file=bootimage.bin -s -S
