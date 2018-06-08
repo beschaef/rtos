@@ -10,6 +10,7 @@ build:
 clean:
 	cargo clean
 	cargo update
+	rm TRACE_*
 
 fmt:
 	cargo fmt
