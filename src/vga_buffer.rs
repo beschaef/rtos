@@ -5,6 +5,8 @@ use core::fmt::{Arguments, Result, Write};
 use spin::Mutex;
 use volatile::Volatile;
 use x86_64;
+#[macro_use]
+use trace;
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy)]
@@ -81,6 +83,7 @@ impl Writer {
     }
 
     pub fn write_at(&mut self, str: &str, row: u8, col: u8, color: Color) {
+        //trace!("text: {} r: {} c:{}", str,row,col);
         for byte in str.bytes() {
             self.buffer.chars[row as usize][col as usize].write(ScreenChar {
                 ascii_character: byte,

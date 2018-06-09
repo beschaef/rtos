@@ -77,12 +77,10 @@ pub fn sched_init(memory_controller: &mut MemoryController) {
 }
 
 pub fn uptime1() {
-    //trace!("started uptime1");
+
     let color = Color::LightGreen;
     let mut r = 0;
     loop {
-        //trace!("loop uptime1");
-
         r = (r + 1) % 9;
         let color = Color::LightGreen;
         match r {
@@ -98,16 +96,19 @@ pub fn uptime1() {
             9 => vga_buffer::write_at("0", 0, 0 + 7, color),
             _ => vga_buffer::write_at("0", 0, 0 + 7, color),
         }
-        msleep(1000);
+        let mut t = 0;
+        for i in 0..20 {
+            t = msleep(1000);
+        }
+        trace!("u1 slept until {}", t);
     }
 }
 pub fn uptime2() {
-    //trace!("started uptime2");
+    trace!("started uptime2");
     let color = Color::LightGreen;
     let mut l = -1;
     let mut x = 0;
     loop {
-        //trace!("loop uptime2");
 
         l = (l + 1) % 9;
         let color = Color::LightGreen;
@@ -124,7 +125,11 @@ pub fn uptime2() {
             9 => vga_buffer::write_at("0", 2, 0 + 7, color),
             _ => vga_buffer::write_at("0", 2, 0 + 7, color),
         }
-        msleep(1000);
+        let mut t = 0;
+        for i in 0..20 {
+            t = msleep(1000);
+        }
+        trace!("u2 slept until {}", t);
     }
 }
 
@@ -135,17 +140,17 @@ fn idle_task(){
 }
 
 
-pub fn msleep(ms: u64) {
+pub fn msleep(ms: u64) -> i64 {
     let one_sec = get_cpu_freq();
-    let time = one_sec * (1000 / ms) + rdtsc();
-    trace!("sleep until {}",time);
-    loop {
-        if time > rdtsc() {
-        }
-        else {
-            break;
-        }
+    let mut time = (one_sec * ms / 1000) as i64;
+    let mut tsc = rdtsc();
+    //trace!("timmmmeeee {}",time);
+    while time > 0 {
+        let new_tsc = rdtsc();
+        time -= (new_tsc-tsc) as i64;
+        tsc = new_tsc;
     }
+    return time;
 
 }
 
@@ -154,7 +159,7 @@ pub fn schedule(f: &mut ExceptionStackFrame) {
     let stackpointer = f.stack_pointer;
     let instructionpointer = f.instruction_pointer;
     let running = TASKS.lock().pop().unwrap();
-    trace!("123");
+    trace!("task: {}", running.instruction_pointer);
     unsafe {
         if RUNNING_TASK.lock().status != 0 {
             let old = TaskData::new(cpuflags, stackpointer, instructionpointer, running.status);

@@ -204,6 +204,7 @@ extern "x86-interrupt" fn page_fault(
     _page_error_struct: PageFaultErrorCode,
 ) {
     println!("EXCEPTION: page_fault\n{:#?}", stack_frame);
+    trace!("EXCEPTION: page_fault on {}",stack_frame.instruction_pointer);
     loop {}
 }
 extern "x86-interrupt" fn x87_floating_point(stack_frame: &mut ExceptionStackFrame) {
@@ -296,6 +297,7 @@ extern "x86-interrupt" fn keyboard_handler(stack_frame: &mut ExceptionStackFrame
         let mut scancode: u8 = cpuio::UnsafePort::new(0x60).read();
         if let Some(c) = keyboard::from_scancode(scancode as usize) {
             println!("{:?}", c);
+            trace!("pressed: {:?}",c);
             if c == 'h' {
                 loop {}
             }

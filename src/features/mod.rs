@@ -68,6 +68,7 @@ pub fn get_cpu_freq() -> u64 {
             calc_freq();
             CPU_FREQ = calc_freq();
         }
+        trace!("freq: {}", CPU_FREQ);
         CPU_FREQ as u64
     }
 }

@@ -101,14 +101,13 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
         x86_64::instructions::interrupts::disable();
     }
     let freq = get_cpu_freq();
-    trace_info("main","text");
 
     println!("freq: {}", freq);
     println!("{}",function!());
+    simple_trace!("TEST SIMPLE TRACE MACRO");
     trace!();
     trace!("TEST TRACE");
     trace!("TEST TRACE WITH ARGS: {}", freq);
-    simple_trace!("TEST SIMPLE TRACE MACRO");
 
 
     // invoke a breakpoint exception
