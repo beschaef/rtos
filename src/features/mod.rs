@@ -1,6 +1,5 @@
 pub mod clock;
 pub mod keyboard;
-pub mod trace;
 
 use x86_64;
 use cpuio;

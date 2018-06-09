@@ -26,9 +26,12 @@
 #![feature(const_atomic_usize_new)]
 #![feature(global_allocator, heap_api)]
 #![feature(naked_functions)]
+#![feature(core_intrinsics)]
 
 #[macro_use]
 mod vga_buffer;
+#[macro_use]
+mod trace;
 mod features;
 mod interrupts;
 mod memory;
@@ -55,7 +58,7 @@ extern crate cpuio;
 extern crate linked_list_allocator;
 
 use features::{get_cpu_freq};
-use features::trace::*;
+use trace::*;
 use os_bootinfo::BootInfo;
 
 //use memory::heap_allocator::BumpAllocator;
@@ -101,6 +104,12 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
     trace_info("main","text");
 
     println!("freq: {}", freq);
+    println!("{}",function!());
+    trace!();
+    trace!("TEST TRACE");
+    trace!("TEST TRACE WITH ARGS: {}", freq);
+    simple_trace!("TEST SIMPLE TRACE MACRO");
+
 
     // invoke a breakpoint exception
     //x86_64::instructions::interrupts::int3();

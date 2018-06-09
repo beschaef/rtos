@@ -77,9 +77,11 @@ pub fn sched_init(memory_controller: &mut MemoryController) {
 }
 
 pub fn uptime1() {
+    //trace!("started uptime1");
     let color = Color::LightGreen;
     let mut r = 0;
     loop {
+        //trace!("loop uptime1");
 
         r = (r + 1) % 9;
         let color = Color::LightGreen;
@@ -100,10 +102,12 @@ pub fn uptime1() {
     }
 }
 pub fn uptime2() {
+    //trace!("started uptime2");
     let color = Color::LightGreen;
     let mut l = -1;
     let mut x = 0;
     loop {
+        //trace!("loop uptime2");
 
         l = (l + 1) % 9;
         let color = Color::LightGreen;
@@ -134,6 +138,7 @@ fn idle_task(){
 pub fn msleep(ms: u64) {
     let one_sec = get_cpu_freq();
     let time = one_sec * (1000 / ms) + rdtsc();
+    trace!("sleep until {}",time);
     loop {
         if time > rdtsc() {
         }
@@ -149,6 +154,7 @@ pub fn schedule(f: &mut ExceptionStackFrame) {
     let stackpointer = f.stack_pointer;
     let instructionpointer = f.instruction_pointer;
     let running = TASKS.lock().pop().unwrap();
+    trace!("123");
     unsafe {
         if RUNNING_TASK.lock().status != 0 {
             let old = TaskData::new(cpuflags, stackpointer, instructionpointer, running.status);
