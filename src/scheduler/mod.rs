@@ -77,7 +77,9 @@ pub fn sched_init(memory_controller: &mut MemoryController) {
 }
 
 pub fn uptime1() {
-    //trace!("started uptime1");
+    msleep(1000);
+    trace!("started uptime1");
+
     let color = Color::LightGreen;
     let mut r = 0;
     loop {
@@ -101,8 +103,10 @@ pub fn uptime1() {
         msleep(1000);
     }
 }
+
 pub fn uptime2() {
-    //trace!("started uptime2");
+    msleep(1000);
+    trace!("started uptime2");
     let color = Color::LightGreen;
     let mut l = -1;
     let mut x = 0;
@@ -146,6 +150,16 @@ pub fn msleep(ms: u64) {
             break;
         }
     }
+//    let mut time = (one_sec * (ms / 1000)) as i64; // (one_sec * ms / 1000) as i64; doesnt work!
+//    let mut tsc = rdtsc();
+//    //trace!("timmmmeeee {}",time);
+//    while time > 0 {
+//        let new_tsc = rdtsc();
+//        time -= (new_tsc-tsc) as i64;
+//        tsc = new_tsc;
+//    }
+//    //trace!("after while");
+//    return time;
 
 }
 
@@ -153,8 +167,8 @@ pub fn schedule(f: &mut ExceptionStackFrame) {
     let cpuflags = f.cpu_flags;
     let stackpointer = f.stack_pointer;
     let instructionpointer = f.instruction_pointer;
-    let running = TASKS.lock().pop().unwrap();
-    trace!("123");
+    let running = TASKS.lock().pop().expect("scheduler schedule failed");
+    //trace!("task: {}", running.instruction_pointer);
     unsafe {
         if RUNNING_TASK.lock().status != 0 {
             let old = TaskData::new(cpuflags, stackpointer, instructionpointer, running.status);

@@ -61,9 +61,9 @@ where
             );
             let frame = allocator.allocate_frame().expect("no frames available");
             self.entries[index].set(frame, PRESENT | WRITABLE);
-            self.next_table_mut(index).unwrap().zero();
+            self.next_table_mut(index).expect("table next_table_create failed").zero();
         }
-        self.next_table_mut(index).unwrap()
+        self.next_table_mut(index).expect("table next_table_create_2 failed")
     }
 }
 

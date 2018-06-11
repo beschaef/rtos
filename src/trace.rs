@@ -1,6 +1,7 @@
 use cpuio::UnsafePort;
 use x86_64::instructions::rdtsc;
 use spin::Mutex;
+use x86_64;
 
 struct Trace {
     //port: cpuio::UnsafePort,
@@ -24,7 +25,17 @@ impl Trace {
 }
 
 pub fn trace_info(fn_name: &str, info_text: &str) {
-    TRACE.lock().write(fn_name, info_text);
+    unsafe {
+
+        x86_64::instructions::interrupts::disable();
+
+        let mut lock = TRACE.try_lock();
+        if lock.is_some() {
+            let mut unwrapped = lock.expect("trace unwrap failed");
+            unwrapped.write(fn_name, info_text);
+        }
+        x86_64::instructions::interrupts::enable();
+    }
 }
 
 
