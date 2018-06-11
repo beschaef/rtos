@@ -7,6 +7,7 @@ use spin::{Mutex, Once};
 use x86_64::structures::idt::{ExceptionStackFrame, Idt, PageFaultErrorCode};
 use x86_64::structures::tss::TaskStateSegment;
 use x86_64::VirtualAddress;
+use features;
 
 mod gdt;
 

@@ -160,7 +160,13 @@ macro_rules! println {
 
 pub fn print(args: Arguments) {
     use core::fmt::Write;
-    WRITER.lock().write_fmt(args).expect("vga_buffer print failed");
+    unsafe {
+        let mut locked = WRITER.try_lock();
+        if locked.is_some(){
+            let mut unwrapped = locked.expect("vga_buffer write_at failed");
+            unwrapped.write_fmt(args);
+        }
+    }
 }
 
 #[allow(dead_code)]

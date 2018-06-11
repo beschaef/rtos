@@ -26,15 +26,19 @@ impl Trace {
 
 pub fn trace_info(fn_name: &str, info_text: &str) {
     unsafe {
-
         x86_64::instructions::interrupts::disable();
+        trace_info_without_interrupts(fn_name, info_text);
+        x86_64::instructions::interrupts::enable();
+    }
+}
 
+pub fn trace_info_without_interrupts(fn_name: &str, info_text: &str) {
+    unsafe {
         let mut lock = TRACE.try_lock();
         if lock.is_some() {
             let mut unwrapped = lock.expect("trace unwrap failed");
             unwrapped.write(fn_name, info_text);
         }
-        x86_64::instructions::interrupts::enable();
     }
 }
 
@@ -48,6 +52,15 @@ macro_rules! trace {
 
 macro_rules! simple_trace {
     ($($arg:tt)*) => ($crate::trace::trace_info(function!(),&format!($($arg)*)));
+}
+
+/// This Trace isn't disabling the Interrupts while writing.
+/// Only use in Interruptroutine's or before enabling Interrupts.
+macro_rules! early_trace {
+    () => ($crate::trace::trace_info_without_interrupts(function!(),&format!("")));
+    ($fmt:expr) => ($crate::trace::trace_info_without_interrupts(function!(),&format!($fmt)));
+    ($fmt:expr, $($arg:tt)*) => ($crate::trace::trace_info_without_interrupts(function!(),&format!($fmt, $($arg)*)));
+
 }
 
 macro_rules! function {

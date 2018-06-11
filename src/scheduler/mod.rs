@@ -74,11 +74,13 @@ pub fn sched_init(memory_controller: &mut MemoryController) {
             1,
         ),
     );
+    early_trace!("initialised scheduler");
 }
 
 pub fn uptime1() {
     msleep(1000);
-    trace!("started uptime1");
+    early_trace!();
+    //trace!("started uptime1");
 
     let color = Color::LightGreen;
     let mut r = 0;
@@ -100,13 +102,15 @@ pub fn uptime1() {
             9 => vga_buffer::write_at("0", 0, 0 + 7, color),
             _ => vga_buffer::write_at("0", 0, 0 + 7, color),
         }
+        early_trace!("CHECK");
         msleep(1000);
     }
 }
 
 pub fn uptime2() {
     msleep(1000);
-    trace!("started uptime2");
+    early_trace!();
+    //trace!("started uptime2");
     let color = Color::LightGreen;
     let mut l = -1;
     let mut x = 0;
@@ -128,6 +132,7 @@ pub fn uptime2() {
             9 => vga_buffer::write_at("0", 2, 0 + 7, color),
             _ => vga_buffer::write_at("0", 2, 0 + 7, color),
         }
+        early_trace!("CHECK");
         msleep(1000);
     }
 }
@@ -141,29 +146,28 @@ fn idle_task(){
 
 pub fn msleep(ms: u64) {
     let one_sec = get_cpu_freq();
-    let time = one_sec * (1000 / ms) + rdtsc();
-    trace!("sleep until {}",time);
-    loop {
-        if time > rdtsc() {
-        }
-        else {
-            break;
-        }
-    }
-//    let mut time = (one_sec * (ms / 1000)) as i64; // (one_sec * ms / 1000) as i64; doesnt work!
-//    let mut tsc = rdtsc();
-//    //trace!("timmmmeeee {}",time);
-//    while time > 0 {
-//        let new_tsc = rdtsc();
-//        time -= (new_tsc-tsc) as i64;
-//        tsc = new_tsc;
+//    let time = one_sec * (1000 / ms) + rdtsc();
+//    trace!("sleep until {}",time);
+//    loop {
+//        if time > rdtsc() {
+//        }
+//        else {
+//            break;
+//        }
 //    }
-//    //trace!("after while");
+    let mut time = (one_sec * (ms / 1000)); // (one_sec * ms / 1000) as i64; doesnt work!
+    let mut tsc = time + rdtsc();
+    //trace!("sleep until {}",time);
+    while tsc > rdtsc() {
+        unsafe{asm!("INT 20h"::::"intel","volatile");}
+    }
+    //trace!("after while");
 //    return time;
 
 }
 
 pub fn schedule(f: &mut ExceptionStackFrame) {
+    early_trace!();
     let cpuflags = f.cpu_flags;
     let stackpointer = f.stack_pointer;
     let instructionpointer = f.instruction_pointer;
