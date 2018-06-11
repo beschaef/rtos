@@ -15,20 +15,60 @@ use x86_64::instructions::rdtsc;
 use HEAP_ALLOCATOR;
 use features::get_cpu_freq;
 
+static mut PID_COUNTER: usize = 0;
+
+static mut RUNNING_TASK: Mutex<TaskData> = Mutex::new(TaskData {
+    pid: 0,
+    cpu_flags: 0,
+    stack_pointer: x86_64::VirtualAddress(0),
+    instruction_pointer: x86_64::VirtualAddress(0),
+    status: TaskStatus::RUNNING
+});
+
+fn increment_pid() -> usize {
+    unsafe {
+        PID_COUNTER += 1;
+        PID_COUNTER
+    }
+}
+
+lazy_static! {
+    static ref TASKS: Mutex<Vec<TaskData>> = Mutex::new(vec![]);
+    static ref IDLE_TASK: Mutex<TaskData> = Mutex::new(TaskData::new(
+        0,
+        x86_64::VirtualAddress(0),
+        x86_64::VirtualAddress(idle_task as usize),
+        TaskStatus::IDLE
+    ));
+}
+
+#[derive(Debug, Clone)]
+pub enum TaskStatus {
+    IDLE,
+    READY,
+    RUNNING,
+    SLEEPING
+}
+
+#[derive(Debug, Clone)]
 pub struct TaskData {
+    pid: usize,
     cpu_flags: u64,
     stack_pointer: VirtualAddress,
     instruction_pointer: VirtualAddress,
-    status: u64,
+    status: TaskStatus,
 }
+
+///unsafe block is actually safe because we're initializing the tasks before the interrupts are enabled
 impl TaskData {
-    pub const fn new(
+    pub fn new(
         cpu_flags: u64,
         stack_pointer: VirtualAddress,
         instruction_pointer: VirtualAddress,
-        status: u64,
+        status: TaskStatus
     ) -> Self {
         TaskData {
+            pid: increment_pid(),
             cpu_flags,
             stack_pointer,
             instruction_pointer,
@@ -36,21 +76,15 @@ impl TaskData {
         }
     }
 
-    pub const fn dummy() -> Self {
-        TaskData::new(0, x86_64::VirtualAddress(0), x86_64::VirtualAddress(0), 0)
+    pub fn dummy() -> Self {
+        TaskData {
+            pid: increment_pid(),
+            cpu_flags: 0,
+            stack_pointer: x86_64::VirtualAddress(0),
+            instruction_pointer: x86_64::VirtualAddress(0),
+            status: TaskStatus::RUNNING
+        }
     }
-}
-
-pub static mut RUNNING_TASK: Mutex<TaskData> = Mutex::new(TaskData::dummy());
-lazy_static! {
-    static ref TASKS: Mutex<Vec<TaskData>> = Mutex::new(vec![]);
-    static ref NO_MAIN: u8 = 0;
-    static ref IDLE_TASK: Mutex<TaskData> = Mutex::new(TaskData::new(
-        0,
-        x86_64::VirtualAddress(0),
-        x86_64::VirtualAddress(idle_task as usize),
-        1,
-    ));
 }
 
 pub fn sched_init(memory_controller: &mut MemoryController) {
@@ -61,7 +95,7 @@ pub fn sched_init(memory_controller: &mut MemoryController) {
             0,
             x86_64::VirtualAddress(memory.top()),
             x86_64::VirtualAddress(uptime1 as usize),
-            1,
+            TaskStatus::READY
         ),
     );
     let memory = memory_controller.alloc_stack(2).expect("Ooopsie");
@@ -71,9 +105,20 @@ pub fn sched_init(memory_controller: &mut MemoryController) {
             0,
             x86_64::VirtualAddress(memory.top()),
             x86_64::VirtualAddress(uptime2 as usize),
-            1,
+            TaskStatus::READY
         ),
     );
+    let memory = memory_controller.alloc_stack(2).expect("Ooopsie");
+    TASKS.lock().insert(
+        0,
+        TaskData::new(
+            0,
+            x86_64::VirtualAddress(memory.top()),
+            x86_64::VirtualAddress(idle_task as usize),
+            TaskStatus::IDLE
+        ),
+    );
+
     early_trace!("initialised scheduler");
 }
 
@@ -171,18 +216,19 @@ pub fn schedule(f: &mut ExceptionStackFrame) {
     let cpuflags = f.cpu_flags;
     let stackpointer = f.stack_pointer;
     let instructionpointer = f.instruction_pointer;
-    let running = TASKS.lock().pop().expect("scheduler schedule failed");
-    //trace!("task: {}", running.instruction_pointer);
+    let to_run = TASKS.lock().pop().expect("scheduler schedule failed");
+    //trace!("task: {}", to_run.instruction_pointer);
     unsafe {
-        if RUNNING_TASK.lock().status != 0 {
-            let old = TaskData::new(cpuflags, stackpointer, instructionpointer, running.status);
+        if RUNNING_TASK.lock().pid != 0 { // PID = 0 --> main function
+            //let old = TaskData::new(cpuflags, stackpointer, instructionpointer, to_run.status);
+            let old = RUNNING_TASK.lock().clone();
             TASKS.lock().insert(0, old);
         }
-        f.stack_pointer = running.stack_pointer;
-        f.instruction_pointer = running.instruction_pointer;
+        f.stack_pointer = to_run.stack_pointer;
+        f.instruction_pointer = to_run.instruction_pointer;
 
-        RUNNING_TASK.lock().status = running.status;
-        RUNNING_TASK.lock().stack_pointer = running.stack_pointer;
-        RUNNING_TASK.lock().instruction_pointer = running.instruction_pointer;
+        RUNNING_TASK.lock().status = to_run.status;
+        RUNNING_TASK.lock().stack_pointer = to_run.stack_pointer;
+        RUNNING_TASK.lock().instruction_pointer = to_run.instruction_pointer;
     }
 }
