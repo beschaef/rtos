@@ -22,7 +22,7 @@ run:
 	@qemu-system-x86_64 -drive format=raw,file=bootimage.bin -m 1024M -serial file:logs/TRACE_$(TIME)
 
 debug:
-	@qemu-system-x86_64 -drive format=raw,file=bootimage.bin -s -S
+	@qemu-system-x86_64 -drive format=raw,file=bootimage.bin -s -S -m 1024M -serial file:logs/TRACE_$(TIME)
 
 # the rust-os-gdb has to be installed to use
 gdb:
