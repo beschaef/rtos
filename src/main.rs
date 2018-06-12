@@ -106,7 +106,9 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
     println!("{}",function!());
     early_trace!();
     early_trace!("TEST TRACE");
-    early_trace!("TEST TRACE WITH ARGS: {}", freq);
+    early_trace!();
+    early_trace!("Calculated CPU-frequency: {}", freq);
+    early_trace!("Heap Size: {}", HEAP_SIZE);
 
 
     // invoke a breakpoint exception

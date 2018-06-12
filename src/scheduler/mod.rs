@@ -183,6 +183,7 @@ pub fn uptime2() {
 }
 
 fn idle_task(){
+    early_trace!("IDLE");
     loop{
         unsafe{asm!("pause":::: "intel", "volatile");}
     }
@@ -200,9 +201,10 @@ pub fn msleep(ms: u64) {
 //            break;
 //        }
 //    }
+
     let mut time = (one_sec * (ms / 1000)); // (one_sec * ms / 1000) as i64; doesnt work!
     let mut tsc = time + rdtsc();
-    //trace!("sleep until {}",time);
+    trace!("sleep until {}",tsc);
     while tsc > rdtsc() {
         unsafe{asm!("INT 20h"::::"intel","volatile");}
     }
@@ -230,5 +232,6 @@ pub fn schedule(f: &mut ExceptionStackFrame) {
         RUNNING_TASK.lock().status = to_run.status;
         RUNNING_TASK.lock().stack_pointer = to_run.stack_pointer;
         RUNNING_TASK.lock().instruction_pointer = to_run.instruction_pointer;
+        RUNNING_TASK.lock().pid = to_run.pid;
     }
 }
