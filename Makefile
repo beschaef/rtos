@@ -11,8 +11,8 @@ build:
 # cleans up the workspace
 clean:
 	cargo clean
-	cargo update
-	rm logs/TRACE_*
+	#cargo update //overrides versions of crates and may cause incompatibility issues
+	rm -f logs/TRACE_*
 
 # used for formatting rust code
 fmt:
