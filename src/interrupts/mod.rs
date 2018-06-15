@@ -1,5 +1,4 @@
 use cpuio;
-use features;
 use features::keyboard;
 use memory::MemoryController;
 use pic::ChainedPics;
@@ -237,6 +236,7 @@ extern "x86-interrupt" fn alignment_check(stack_frame: &mut ExceptionStackFrame,
     loop {}
 }
 
+#[allow(dead_code)]
 pub fn trigger_test_interrupt() {
     println!("Triggering interrupt");
     unsafe {
@@ -292,9 +292,9 @@ extern "x86-interrupt" fn timer_handler(stack_frame: &mut ExceptionStackFrame) {
 }
 
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-extern "x86-interrupt" fn keyboard_handler(stack_frame: &mut ExceptionStackFrame) {
+extern "x86-interrupt" fn keyboard_handler(_stack_frame: &mut ExceptionStackFrame) {
     unsafe {
-        let mut scancode: u8 = cpuio::UnsafePort::new(0x60).read();
+        let scancode: u8 = cpuio::UnsafePort::new(0x60).read();
         if let Some(c) = keyboard::from_scancode(scancode as usize) {
             println!("{:?}", c);
             if c == 'h' {
@@ -308,12 +308,12 @@ extern "x86-interrupt" fn keyboard_handler(stack_frame: &mut ExceptionStackFrame
     }
 }
 
-extern "x86-interrupt" fn handler_2(stack_frame: &mut ExceptionStackFrame) {
+extern "x86-interrupt" fn handler_2(_stack_frame: &mut ExceptionStackFrame) {
     println!("handler 2");
 }
-extern "x86-interrupt" fn handler_3(stack_frame: &mut ExceptionStackFrame) {
+extern "x86-interrupt" fn handler_3(_stack_frame: &mut ExceptionStackFrame) {
     println!("handler 3");
 }
-extern "x86-interrupt" fn handler_4(stack_frame: &mut ExceptionStackFrame) {
+extern "x86-interrupt" fn handler_4(_stack_frame: &mut ExceptionStackFrame) {
     println!("handler 4");
 }

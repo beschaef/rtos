@@ -1,13 +1,15 @@
-use core::sync::atomic::{AtomicUsize, Ordering};
 use vga_buffer;
 use vga_buffer::Color;
 
+#[allow(dead_code)]
 pub struct Clock {
     row: u8,
     col: u8,
 }
 
 impl Clock {
+
+    #[allow(dead_code)]
     pub fn new(row: u8, col: u8) -> Self {
         let color = Color::LightGreen;
         vga_buffer::write_at(":", row, col + 5, color);
@@ -21,6 +23,7 @@ impl Clock {
         Clock { row, col }
     }
 
+    #[allow(dead_code)]
     pub fn uptime(&self) {
         let color = Color::LightGreen;
         loop {
@@ -55,6 +58,7 @@ impl Clock {
         }
     }
 
+    #[allow(dead_code)]
     fn increase_minute(&self) {
         let color = Color::LightGreen;
         match vga_buffer::read_at(self.row as usize, (self.col + 4) as usize) {
@@ -86,6 +90,7 @@ impl Clock {
         }
     }
 
+    #[allow(dead_code)]
     fn increase_hour(&self) {
         let color = Color::LightGreen;
         match (
@@ -129,6 +134,7 @@ impl Clock {
         }
     }
 
+    #[allow(dead_code)]
     pub fn sleep(&self) {
         //1342302694
         for i in 0..500_000 {
