@@ -2,6 +2,7 @@ use vga_buffer;
 use vga_buffer::Color;
 use features::msleep;
 use x86_64::VirtualAddress;
+use scheduler::RUNNING_TASK;
 
 static mut PID_COUNTER: usize = 0;
 
@@ -56,13 +57,6 @@ impl TaskData {
             instruction_pointer,
             status,
             sleep_ticks,
-        }
-    }
-
-    fn increment_pid() -> usize {
-        unsafe {
-            PID_COUNTER += 1;
-            PID_COUNTER
         }
     }
 }
@@ -131,6 +125,7 @@ pub fn uptime4() {
     }
 }
 
+#[allow(dead_code)]
 pub fn uptime5() {
     msleep(2000);
     early_trace!();
@@ -147,11 +142,43 @@ pub fn uptime5() {
     }
 }
 
+pub fn uptime_temp() {
+    msleep(1000);
+    early_trace!();
+    let mut r = 0;
+    for _i in 0..3 {
+        //trace!("loop uptime1");
+
+        r = r + 1;
+        let color = Color::LightGreen;
+        let text = &format!("{:2}:{:2}:{:2}",(r/(60*60))%24,(r/(60))%60,r%(60));
+        vga_buffer::write_at(text, 10, 0, color);
+        early_trace!("Uptime_temp written {:?}",text);
+        msleep(1000);
+    }
+    finish_task();
+}
+
 pub fn idle_task() {
     early_trace!("IDLE");
     loop {
         unsafe {
             asm!("pause":::: "intel", "volatile");
         }
+    }
+}
+
+fn increment_pid() -> usize {
+    unsafe {
+        PID_COUNTER += 1;
+        PID_COUNTER
+    }
+}
+
+fn finish_task() {
+    early_trace!("TASK FINISHED");
+    unsafe {
+        RUNNING_TASK.lock().status = TaskStatus::FINISHED;
+        int!(0x20);
     }
 }

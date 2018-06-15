@@ -66,7 +66,7 @@ pub fn sched_init(memory_controller: &mut MemoryController) {
         TaskData::new(
             0,
             x86_64::VirtualAddress(memory.top()),
-            x86_64::VirtualAddress(uptime5 as usize),
+            x86_64::VirtualAddress(uptime_temp as usize),
             TaskStatus::READY,
         ),
     );
@@ -111,7 +111,8 @@ pub fn schedule(f: &mut ExceptionStackFrame) {
     //trace!("task: {}", to_run.instruction_pointer);
 
     unsafe {
-        if RUNNING_TASK.lock().pid != 0 {
+        let not_finished = RUNNING_TASK.lock().status != TaskStatus::FINISHED;
+        if RUNNING_TASK.lock().pid != 0 && not_finished {
             let pid_c = RUNNING_TASK.lock().pid;
             let sleep_ticks_c = RUNNING_TASK.lock().sleep_ticks;
             // PID = 0 --> main function
