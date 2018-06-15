@@ -1,7 +1,6 @@
 pub mod clock;
 pub mod keyboard;
 
-use cpuio;
 use x86_64;
 use x86_64::instructions::rdtsc;
 use scheduler::RUNNING_TASK;
@@ -11,17 +10,17 @@ static mut CPU_FREQ: usize = 0;
 /// Wird genutzt um die cpu_frequenz zu berechnen.
 /// Code ist angelehnt an https://wiki.osdev.org/Detecting_CPU_Speed
 /// Unterliegt aktuell noch Schwankungen um die 15%
-///
+#[allow(dead_code)]
 fn calc_freq() -> usize {
     unsafe {
         x86_64::instructions::interrupts::disable();
     }
     const SIZE: usize = 50;
     let mut array: [usize; SIZE] = [0; SIZE];
-    let mut stsc: usize = 0;
-    let mut etsc: usize = 0;
-    let mut lo: usize = 0;
-    let mut hi: usize = 0;
+    let mut stsc: usize;
+    let mut etsc: usize;
+    let lo: usize = 0;
+    let hi: usize = 0;
     let mut i = SIZE;
     loop {
         unsafe {
@@ -37,7 +36,7 @@ fn calc_freq() -> usize {
                     out 0x40, al"::::"intel", "volatile");
 
             stsc = x86_64::instructions::rdtsc() as usize;
-            for i in 0..4000 {
+            for _i in 0..4000 {
                 asm!("  xor eax,edx
                         xor edx,eax"::::"intel", "volatile");
             }
@@ -47,7 +46,7 @@ fn calc_freq() -> usize {
 
             asm!(""::"{rcx}"(lo),"{rcx}"(hi));
         }
-        let ticks: usize = (0x7300 - ((hi * 256) + lo));
+        let ticks: usize = 0x7300 - ((hi * 256) + lo);
         let freq: usize = (((etsc - stsc) * 1193182) / ticks) as usize;
         array[i] = freq;
         if i == 0 {
@@ -79,8 +78,8 @@ pub fn msleep(ms: u64) {
     trace!();
     let one_sec = get_cpu_freq();
 
-    let mut time = (one_sec * (ms / 1000)); // (one_sec * ms / 1000) as i64; doesnt work!
-    let mut tsc = time + rdtsc();
+    let time = one_sec * (ms / 1000); // (one_sec * ms / 1000) as i64; doesnt work!
+    let tsc = time + rdtsc();
     trace!("sleep until: {}", tsc);
     unsafe {
         {

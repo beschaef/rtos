@@ -112,6 +112,7 @@ impl Writer {
         }
     }
 
+    #[allow(dead_code)]
     pub fn clear_screen(&mut self) {
         let blank = ScreenChar {
             ascii_character: b' ',
@@ -130,6 +131,7 @@ impl Writer {
         }
     }
 
+    #[allow(dead_code)]
     pub fn read_byte(&self, row: usize, col: usize) -> u8 {
         self.buffer.chars[row][col].read().ascii_character
     }
@@ -164,12 +166,10 @@ pub fn print(args: Arguments) {
     use core::fmt::Write;
     unsafe {
         x86_64::instructions::interrupts::disable();
-    }
-    unsafe {
-        let mut locked = WRITER.try_lock();
+        let locked = WRITER.try_lock();
         if locked.is_some() {
             let mut unwrapped = locked.expect("vga_buffer write_fmt failed");
-            unwrapped.write_fmt(args);
+            let _res = unwrapped.write_fmt(args);
         }
     }
 }
@@ -186,9 +186,7 @@ pub fn write(str: &str) {
 pub fn write_at(str: &str, row: u8, col: u8, color: Color) {
     unsafe {
         x86_64::instructions::interrupts::disable();
-    }
-    unsafe {
-        let mut locked = WRITER.try_lock();
+        let locked = WRITER.try_lock();
         if locked.is_some() {
             let mut unwrapped = locked.expect("vga_buffer write_at failed");
             unwrapped.write_at(str, row, col, color);
@@ -199,10 +197,12 @@ pub fn write_at(str: &str, row: u8, col: u8, color: Color) {
     }
 }
 
+#[allow(dead_code)]
 pub fn clear_screen() {
     WRITER.lock().clear_screen();
 }
 
+#[allow(dead_code)]
 pub fn read_at(row: usize, col: usize) -> u8 {
     WRITER.lock().read_byte(row, col)
 }

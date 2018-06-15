@@ -1,19 +1,10 @@
 use alloc::Vec;
-use cpuio;
-use features::clock::Clock;
-use features::get_cpu_freq;
-use features::keyboard;
 use memory::MemoryController;
-use pic::ChainedPics;
-use spin::{Mutex, Once};
-use vga_buffer;
-use vga_buffer::Color;
+use spin::{Mutex};
 use x86_64;
 use x86_64::instructions::rdtsc;
-use x86_64::structures::idt::{ExceptionStackFrame, Idt, PageFaultErrorCode};
-use x86_64::structures::tss::TaskStateSegment;
+use x86_64::structures::idt::{ExceptionStackFrame};
 use x86_64::VirtualAddress;
-use HEAP_ALLOCATOR;
 use tasks::*;
 
 static mut PID_COUNTER: usize = 0;
@@ -89,17 +80,6 @@ impl TaskData {
             instruction_pointer,
             status,
             sleep_ticks,
-        }
-    }
-
-    pub fn dummy() -> Self {
-        TaskData {
-            pid: increment_pid(),
-            cpu_flags: 0,
-            stack_pointer: x86_64::VirtualAddress(0),
-            instruction_pointer: x86_64::VirtualAddress(0),
-            status: TaskStatus::RUNNING,
-            sleep_ticks: 0,
         }
     }
 }

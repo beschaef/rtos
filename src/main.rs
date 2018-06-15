@@ -60,7 +60,6 @@ extern crate linked_list_allocator;
 
 use features::get_cpu_freq;
 use os_bootinfo::BootInfo;
-use trace::*;
 
 //use memory::heap_allocator::BumpAllocator;
 

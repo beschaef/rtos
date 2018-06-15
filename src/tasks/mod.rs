@@ -1,30 +1,13 @@
-use alloc::Vec;
-use cpuio;
-use features::clock::Clock;
-use features::get_cpu_freq;
-use features::keyboard;
-use memory::MemoryController;
-use pic::ChainedPics;
-use spin::{Mutex, Once};
 use vga_buffer;
 use vga_buffer::Color;
-use x86_64;
-use x86_64::instructions::rdtsc;
-use x86_64::structures::idt::{ExceptionStackFrame, Idt, PageFaultErrorCode};
-use x86_64::structures::tss::TaskStateSegment;
-use x86_64::VirtualAddress;
-use HEAP_ALLOCATOR;
 use features::msleep;
 
 pub fn uptime1() {
     msleep(1000);
     early_trace!();
-    //trace!("started uptime1");
 
-    let color = Color::LightGreen;
     let mut r = 0;
     loop {
-        //trace!("loop uptime1");
 
         r = r + 1;
         let color = Color::LightGreen;
@@ -38,8 +21,6 @@ pub fn uptime1() {
 pub fn uptime2() {
     msleep(1000);
     early_trace!();
-    //trace!("started uptime2");
-    let color = Color::LightGreen;
     let mut r = 0;
     loop {
         //trace!("loop uptime1");
@@ -56,8 +37,6 @@ pub fn uptime2() {
 pub fn uptime3() {
     msleep(1000);
     early_trace!();
-    //trace!("started uptime2");
-    let color = Color::LightGreen;
     let mut r = 0;
     loop {
         //trace!("loop uptime1");
@@ -74,8 +53,6 @@ pub fn uptime3() {
 pub fn uptime4() {
     msleep(1000);
     early_trace!();
-    //trace!("started uptime2");
-    let color = Color::LightGreen;
     let mut r = 0;
     loop {
         //trace!("loop uptime1");
@@ -92,8 +69,6 @@ pub fn uptime4() {
 pub fn uptime5() {
     msleep(2000);
     early_trace!();
-    //trace!("started uptime2");
-    let color = Color::LightGreen;
     let mut r = 0;
     loop {
         //trace!("loop uptime1");

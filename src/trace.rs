@@ -9,7 +9,6 @@ struct Trace {
 
 lazy_static! {
     static ref TRACE: Mutex<Trace> = Mutex::new(Trace {});
-    static ref TEMP: u8 = 0;
 }
 
 impl Trace {
@@ -32,13 +31,11 @@ pub fn trace_info(fn_name: &str, info_text: &str) {
 }
 
 pub fn trace_info_without_interrupts(fn_name: &str, info_text: &str) {
-    unsafe {
-        let mut lock = TRACE.try_lock();
+        let lock = TRACE.try_lock();
         if lock.is_some() {
             let mut unwrapped = lock.expect("trace unwrap failed");
             unwrapped.write(fn_name, info_text);
         }
-    }
 }
 
 macro_rules! trace {
