@@ -4,10 +4,7 @@ use spin::{Mutex};
 use x86_64;
 use x86_64::instructions::rdtsc;
 use x86_64::structures::idt::{ExceptionStackFrame};
-use x86_64::VirtualAddress;
 use tasks::*;
-
-static mut PID_COUNTER: usize = 0;
 
 pub static mut RUNNING_TASK: Mutex<TaskData> = Mutex::new(TaskData {
     pid: 0,
@@ -18,70 +15,8 @@ pub static mut RUNNING_TASK: Mutex<TaskData> = Mutex::new(TaskData {
     sleep_ticks: 0,
 });
 
-fn increment_pid() -> usize {
-    unsafe {
-        PID_COUNTER += 1;
-        PID_COUNTER
-    }
-}
-
 lazy_static! {
     static ref TASKS: Mutex<Vec<TaskData>> = Mutex::new(vec![]);
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum TaskStatus {
-    IDLE,
-    READY,
-    RUNNING,
-    SLEEPING,
-}
-
-#[derive(Debug, Clone)]
-pub struct TaskData {
-    pid: usize,
-    cpu_flags: u64,
-    stack_pointer: VirtualAddress,
-    instruction_pointer: VirtualAddress,
-    status: TaskStatus,
-    pub sleep_ticks: usize,
-}
-
-///unsafe block is actually safe because we're initializing the tasks before the interrupts are enabled
-impl TaskData {
-    pub fn new(
-        cpu_flags: u64,
-        stack_pointer: VirtualAddress,
-        instruction_pointer: VirtualAddress,
-        status: TaskStatus,
-    ) -> Self {
-        TaskData {
-            pid: increment_pid(),
-            cpu_flags,
-            stack_pointer,
-            instruction_pointer,
-            status,
-            sleep_ticks: 0,
-        }
-    }
-
-    pub fn copy(
-        pid: usize,
-        cpu_flags: u64,
-        stack_pointer: VirtualAddress,
-        instruction_pointer: VirtualAddress,
-        status: TaskStatus,
-        sleep_ticks: usize,
-    ) -> Self {
-        TaskData {
-            pid,
-            cpu_flags,
-            stack_pointer,
-            instruction_pointer,
-            status,
-            sleep_ticks,
-        }
-    }
 }
 
 pub fn sched_init(memory_controller: &mut MemoryController) {

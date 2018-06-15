@@ -1,6 +1,64 @@
 use vga_buffer;
 use vga_buffer::Color;
 use features::msleep;
+use x86_64::VirtualAddress;
+
+static mut PID_COUNTER: usize = 0;
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum TaskStatus {
+    IDLE,
+    READY,
+    RUNNING,
+    SLEEPING,
+}
+
+#[derive(Debug, Clone)]
+pub struct TaskData {
+    pub pid: usize,
+    pub cpu_flags: u64,
+    pub stack_pointer: VirtualAddress,
+    pub instruction_pointer: VirtualAddress,
+    pub status: TaskStatus,
+    pub sleep_ticks: usize,
+}
+
+///unsafe block is actually safe because we're initializing the tasks before the interrupts are enabled
+impl TaskData {
+    pub fn new(
+        cpu_flags: u64,
+        stack_pointer: VirtualAddress,
+        instruction_pointer: VirtualAddress,
+        status: TaskStatus,
+    ) -> Self {
+        TaskData {
+            pid: increment_pid(),
+            cpu_flags,
+            stack_pointer,
+            instruction_pointer,
+            status,
+            sleep_ticks: 0,
+        }
+    }
+
+    pub fn copy(
+        pid: usize,
+        cpu_flags: u64,
+        stack_pointer: VirtualAddress,
+        instruction_pointer: VirtualAddress,
+        status: TaskStatus,
+        sleep_ticks: usize,
+    ) -> Self {
+        TaskData {
+            pid,
+            cpu_flags,
+            stack_pointer,
+            instruction_pointer,
+            status,
+            sleep_ticks,
+        }
+    }
+}
 
 pub fn uptime1() {
     msleep(1000);
@@ -88,5 +146,12 @@ pub fn idle_task() {
         unsafe {
             asm!("pause":::: "intel", "volatile");
         }
+    }
+}
+
+fn increment_pid() -> usize {
+    unsafe {
+        PID_COUNTER += 1;
+        PID_COUNTER
     }
 }
