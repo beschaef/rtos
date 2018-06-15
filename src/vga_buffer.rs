@@ -81,11 +81,13 @@ impl Writer {
     }
 
     pub fn write_at(&mut self, str: &str, row: u8, col: u8, color: Color) {
+        let mut i = 0;
         for byte in str.bytes() {
-            self.buffer.chars[row as usize][col as usize].write(ScreenChar {
+            self.buffer.chars[row as usize][(col + i)as usize].write(ScreenChar {
                 ascii_character: byte,
                 color_code: ColorCode::new(color, Color::Brown),
             });
+            i += 1;
         }
     }
 
@@ -161,9 +163,12 @@ macro_rules! println {
 pub fn print(args: Arguments) {
     use core::fmt::Write;
     unsafe {
+        x86_64::instructions::interrupts::disable();
+    }
+    unsafe {
         let mut locked = WRITER.try_lock();
         if locked.is_some() {
-            let mut unwrapped = locked.expect("vga_buffer write_at failed");
+            let mut unwrapped = locked.expect("vga_buffer write_fmt failed");
             unwrapped.write_fmt(args);
         }
     }

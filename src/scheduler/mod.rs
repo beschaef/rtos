@@ -140,6 +140,26 @@ pub fn sched_init(memory_controller: &mut MemoryController) {
         TaskData::new(
             0,
             x86_64::VirtualAddress(memory.top()),
+            x86_64::VirtualAddress(uptime4 as usize),
+            TaskStatus::READY,
+        ),
+    );
+    let memory = memory_controller.alloc_stack(2).expect("Ooopsie");
+    TASKS.lock().insert(
+        0,
+        TaskData::new(
+            0,
+            x86_64::VirtualAddress(memory.top()),
+            x86_64::VirtualAddress(uptime5 as usize),
+            TaskStatus::READY,
+        ),
+    );
+    let memory = memory_controller.alloc_stack(2).expect("Ooopsie");
+    TASKS.lock().insert(
+        0,
+        TaskData::new(
+            0,
+            x86_64::VirtualAddress(memory.top()),
             x86_64::VirtualAddress(idle_task as usize),
             TaskStatus::IDLE,
         ),
@@ -158,21 +178,11 @@ pub fn uptime1() {
     loop {
         //trace!("loop uptime1");
 
-        r = (r + 1) % 9;
+        r = r + 1;
         let color = Color::LightGreen;
-        match r {
-            0 => vga_buffer::write_at("1", 0, 0 + 7, color),
-            1 => vga_buffer::write_at("2", 0, 0 + 7, color),
-            2 => vga_buffer::write_at("3", 0, 0 + 7, color),
-            3 => vga_buffer::write_at("4", 0, 0 + 7, color),
-            4 => vga_buffer::write_at("5", 0, 0 + 7, color),
-            5 => vga_buffer::write_at("6", 0, 0 + 7, color),
-            6 => vga_buffer::write_at("7", 0, 0 + 7, color),
-            7 => vga_buffer::write_at("8", 0, 0 + 7, color),
-            8 => vga_buffer::write_at("9", 0, 0 + 7, color),
-            9 => vga_buffer::write_at("0", 0, 0 + 7, color),
-            _ => vga_buffer::write_at("0", 0, 0 + 7, color),
-        }
+        let text = &format!("{:2}:{:2}:{:2}",(r/(60*60))%24,(r/(60))%60,r%(60));
+        vga_buffer::write_at(text, 0, 0, color);
+        early_trace!("Uptime1 written {:?}",text);
         msleep(1000);
     }
 }
@@ -186,21 +196,11 @@ pub fn uptime2() {
     loop {
         //trace!("loop uptime1");
 
-        r = (r + 1) % 9;
+        r = r + 1;
         let color = Color::LightGreen;
-        match r {
-            0 => vga_buffer::write_at("1", 2, 0 + 7, color),
-            1 => vga_buffer::write_at("2", 2, 0 + 7, color),
-            2 => vga_buffer::write_at("3", 2, 0 + 7, color),
-            3 => vga_buffer::write_at("4", 2, 0 + 7, color),
-            4 => vga_buffer::write_at("5", 2, 0 + 7, color),
-            5 => vga_buffer::write_at("6", 2, 0 + 7, color),
-            6 => vga_buffer::write_at("7", 2, 0 + 7, color),
-            7 => vga_buffer::write_at("8", 2, 0 + 7, color),
-            8 => vga_buffer::write_at("9", 2, 0 + 7, color),
-            9 => vga_buffer::write_at("0", 2, 0 + 7, color),
-            _ => vga_buffer::write_at("0", 2, 0 + 7, color),
-        }
+        let text = &format!("{:2}:{:2}:{:2}",(r/(60*60))%24,(r/(60))%60,r%(60));
+        vga_buffer::write_at(text, 2, 0, color);
+        early_trace!("Uptime2 written {:?}",text);
         msleep(1000);
     }
 }
@@ -214,22 +214,48 @@ pub fn uptime3() {
     loop {
         //trace!("loop uptime1");
 
-        r = (r + 1) % 9;
+        r = r + 1;
         let color = Color::LightGreen;
-        match r {
-            0 => vga_buffer::write_at("1", 4, 0 + 7, color),
-            1 => vga_buffer::write_at("2", 4, 0 + 7, color),
-            2 => vga_buffer::write_at("3", 4, 0 + 7, color),
-            3 => vga_buffer::write_at("4", 4, 0 + 7, color),
-            4 => vga_buffer::write_at("5", 4, 0 + 7, color),
-            5 => vga_buffer::write_at("6", 4, 0 + 7, color),
-            6 => vga_buffer::write_at("7", 4, 0 + 7, color),
-            7 => vga_buffer::write_at("8", 4, 0 + 7, color),
-            8 => vga_buffer::write_at("9", 4, 0 + 7, color),
-            9 => vga_buffer::write_at("0", 4, 0 + 7, color),
-            _ => vga_buffer::write_at("0", 4, 0 + 7, color),
-        }
+        let text = &format!("{:2}:{:2}:{:2}",(r/(60*60))%24,(r/(60))%60,r%(60));
+        vga_buffer::write_at(text, 4, 0, color);
+        early_trace!("Uptime3 written {:?}",text);
         msleep(1000);
+    }
+}
+
+pub fn uptime4() {
+    msleep(1000);
+    early_trace!();
+    //trace!("started uptime2");
+    let color = Color::LightGreen;
+    let mut r = 0;
+    loop {
+        //trace!("loop uptime1");
+
+        r = r + 1;
+        let color = Color::LightGreen;
+        let text = &format!("{:2}:{:2}:{:2}",(r/(60*60))%24,(r/(60))%60,r%(60));
+        vga_buffer::write_at(text, 6, 0, color);
+        early_trace!("Uptime4 written {:?}",text);
+        msleep(1000);
+    }
+}
+
+pub fn uptime5() {
+    msleep(2000);
+    early_trace!();
+    //trace!("started uptime2");
+    let color = Color::LightGreen;
+    let mut r = 0;
+    loop {
+        //trace!("loop uptime1");
+
+        r = r + 1;
+        let color = Color::LightGreen;
+        let text = &format!("{:2}:{:2}:{:2}",(r/(60*60))%24,(r/(60))%60,r%(60));
+        vga_buffer::write_at(text, 8, 0, color);
+        early_trace!("Uptime5 written {:?}",text);
+        msleep(5000);
     }
 }
 
@@ -245,15 +271,6 @@ fn idle_task() {
 pub fn msleep(ms: u64) {
     trace!();
     let one_sec = get_cpu_freq();
-    //    let time = one_sec * (1000 / ms) + rdtsc();
-    //    trace!("sleep until {}",time);
-    //    loop {
-    //        if time > rdtsc() {
-    //        }
-    //        else {
-    //            break;
-    //        }
-    //    }
 
     let mut time = (one_sec * (ms / 1000)); // (one_sec * ms / 1000) as i64; doesnt work!
     let mut tsc = time + rdtsc();
@@ -264,13 +281,10 @@ pub fn msleep(ms: u64) {
         }
         asm!("INT 20h"::::"intel","volatile");
     }
-
-    //trace!("after while");
-    //    return time;
 }
 
 pub fn schedule(f: &mut ExceptionStackFrame) {
-    early_trace!();
+    //early_trace!();
     let cpuflags = f.cpu_flags;
     let stackpointer = f.stack_pointer;
     let instructionpointer = f.instruction_pointer;
@@ -285,7 +299,7 @@ pub fn schedule(f: &mut ExceptionStackFrame) {
         early_trace!("popped after sleep task {}", x.sleep_ticks);
         x
     } else if unsafe{RUNNING_TASK.lock().status == TaskStatus::IDLE} {
-        early_trace!("do nothing");
+        //early_trace!("do nothing");
         return;
     } else {
         early_trace!("popped idle");
@@ -314,11 +328,18 @@ pub fn schedule(f: &mut ExceptionStackFrame) {
                 new_status,
                 sleep_ticks_c,
             );
-            let mut position = 1;
+            let mut position = 0;
             if old.status == TaskStatus::IDLE{
-                position = 0
+                TASKS.lock().insert(position, old);
+            } else {
+                for task in TASKS.lock().iter() {
+                    if task.sleep_ticks <= sleep_ticks_c && task.status != TaskStatus::IDLE{
+                        break;
+                    }
+                    position += 1;
+                }
+                TASKS.lock().insert(position, old);
             }
-            TASKS.lock().insert(position, old);
         }
         f.stack_pointer = to_run.stack_pointer;
         f.instruction_pointer = to_run.instruction_pointer;
@@ -327,5 +348,6 @@ pub fn schedule(f: &mut ExceptionStackFrame) {
         RUNNING_TASK.lock().stack_pointer = to_run.stack_pointer;
         RUNNING_TASK.lock().instruction_pointer = to_run.instruction_pointer;
         RUNNING_TASK.lock().pid = to_run.pid;
+        RUNNING_TASK.lock().sleep_ticks = to_run.sleep_ticks;
     }
 }
