@@ -14,10 +14,11 @@ use x86_64::structures::idt::{ExceptionStackFrame, Idt, PageFaultErrorCode};
 use x86_64::structures::tss::TaskStateSegment;
 use x86_64::VirtualAddress;
 use HEAP_ALLOCATOR;
+use tasks::*;
 
 static mut PID_COUNTER: usize = 0;
 
-static mut RUNNING_TASK: Mutex<TaskData> = Mutex::new(TaskData {
+pub static mut RUNNING_TASK: Mutex<TaskData> = Mutex::new(TaskData {
     pid: 0,
     cpu_flags: 0,
     stack_pointer: x86_64::VirtualAddress(0),
@@ -52,7 +53,7 @@ pub struct TaskData {
     stack_pointer: VirtualAddress,
     instruction_pointer: VirtualAddress,
     status: TaskStatus,
-    sleep_ticks: usize,
+    pub sleep_ticks: usize,
 }
 
 ///unsafe block is actually safe because we're initializing the tasks before the interrupts are enabled
@@ -166,121 +167,6 @@ pub fn sched_init(memory_controller: &mut MemoryController) {
     );
 
     early_trace!("initialised scheduler");
-}
-
-pub fn uptime1() {
-    msleep(1000);
-    early_trace!();
-    //trace!("started uptime1");
-
-    let color = Color::LightGreen;
-    let mut r = 0;
-    loop {
-        //trace!("loop uptime1");
-
-        r = r + 1;
-        let color = Color::LightGreen;
-        let text = &format!("{:2}:{:2}:{:2}",(r/(60*60))%24,(r/(60))%60,r%(60));
-        vga_buffer::write_at(text, 0, 0, color);
-        early_trace!("Uptime1 written {:?}",text);
-        msleep(1000);
-    }
-}
-
-pub fn uptime2() {
-    msleep(1000);
-    early_trace!();
-    //trace!("started uptime2");
-    let color = Color::LightGreen;
-    let mut r = 0;
-    loop {
-        //trace!("loop uptime1");
-
-        r = r + 1;
-        let color = Color::LightGreen;
-        let text = &format!("{:2}:{:2}:{:2}",(r/(60*60))%24,(r/(60))%60,r%(60));
-        vga_buffer::write_at(text, 2, 0, color);
-        early_trace!("Uptime2 written {:?}",text);
-        msleep(1000);
-    }
-}
-
-pub fn uptime3() {
-    msleep(1000);
-    early_trace!();
-    //trace!("started uptime2");
-    let color = Color::LightGreen;
-    let mut r = 0;
-    loop {
-        //trace!("loop uptime1");
-
-        r = r + 1;
-        let color = Color::LightGreen;
-        let text = &format!("{:2}:{:2}:{:2}",(r/(60*60))%24,(r/(60))%60,r%(60));
-        vga_buffer::write_at(text, 4, 0, color);
-        early_trace!("Uptime3 written {:?}",text);
-        msleep(1000);
-    }
-}
-
-pub fn uptime4() {
-    msleep(1000);
-    early_trace!();
-    //trace!("started uptime2");
-    let color = Color::LightGreen;
-    let mut r = 0;
-    loop {
-        //trace!("loop uptime1");
-
-        r = r + 1;
-        let color = Color::LightGreen;
-        let text = &format!("{:2}:{:2}:{:2}",(r/(60*60))%24,(r/(60))%60,r%(60));
-        vga_buffer::write_at(text, 6, 0, color);
-        early_trace!("Uptime4 written {:?}",text);
-        msleep(1000);
-    }
-}
-
-pub fn uptime5() {
-    msleep(2000);
-    early_trace!();
-    //trace!("started uptime2");
-    let color = Color::LightGreen;
-    let mut r = 0;
-    loop {
-        //trace!("loop uptime1");
-
-        r = r + 1;
-        let color = Color::LightGreen;
-        let text = &format!("{:2}:{:2}:{:2}",(r/(60*60))%24,(r/(60))%60,r%(60));
-        vga_buffer::write_at(text, 8, 0, color);
-        early_trace!("Uptime5 written {:?}",text);
-        msleep(5000);
-    }
-}
-
-fn idle_task() {
-    early_trace!("IDLE");
-    loop {
-        unsafe {
-            asm!("pause":::: "intel", "volatile");
-        }
-    }
-}
-
-pub fn msleep(ms: u64) {
-    trace!();
-    let one_sec = get_cpu_freq();
-
-    let mut time = (one_sec * (ms / 1000)); // (one_sec * ms / 1000) as i64; doesnt work!
-    let mut tsc = time + rdtsc();
-    trace!("sleep until: {}", tsc);
-    unsafe {
-        {
-            RUNNING_TASK.lock().sleep_ticks = tsc as usize;
-        }
-        asm!("INT 20h"::::"intel","volatile");
-    }
 }
 
 pub fn schedule(f: &mut ExceptionStackFrame) {

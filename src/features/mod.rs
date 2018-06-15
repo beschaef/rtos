@@ -3,6 +3,8 @@ pub mod keyboard;
 
 use cpuio;
 use x86_64;
+use x86_64::instructions::rdtsc;
+use scheduler::RUNNING_TASK;
 
 static mut CPU_FREQ: usize = 0;
 
@@ -70,5 +72,20 @@ pub fn get_cpu_freq() -> u64 {
             CPU_FREQ = 1_600_000_000
         }
         CPU_FREQ as u64
+    }
+}
+
+pub fn msleep(ms: u64) {
+    trace!();
+    let one_sec = get_cpu_freq();
+
+    let mut time = (one_sec * (ms / 1000)); // (one_sec * ms / 1000) as i64; doesnt work!
+    let mut tsc = time + rdtsc();
+    trace!("sleep until: {}", tsc);
+    unsafe {
+        {
+            RUNNING_TASK.lock().sleep_ticks = tsc as usize;
+        }
+        asm!("INT 20h"::::"intel","volatile");
     }
 }
