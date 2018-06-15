@@ -10,7 +10,7 @@ pub enum TaskStatus {
     IDLE,
     READY,
     RUNNING,
-    SLEEPING,
+    FINISHED,
 }
 
 #[derive(Debug, Clone)]
@@ -56,6 +56,13 @@ impl TaskData {
             instruction_pointer,
             status,
             sleep_ticks,
+        }
+    }
+
+    fn increment_pid() -> usize {
+        unsafe {
+            PID_COUNTER += 1;
+            PID_COUNTER
         }
     }
 }
@@ -146,12 +153,5 @@ pub fn idle_task() {
         unsafe {
             asm!("pause":::: "intel", "volatile");
         }
-    }
-}
-
-fn increment_pid() -> usize {
-    unsafe {
-        PID_COUNTER += 1;
-        PID_COUNTER
     }
 }
