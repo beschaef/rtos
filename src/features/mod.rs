@@ -85,6 +85,6 @@ pub fn msleep(ms: u64) {
         {
             RUNNING_TASK.lock().sleep_ticks = tsc as usize;
         }
-        asm!("INT 20h"::::"intel","volatile");
+        int!(0x20);
     }
 }
