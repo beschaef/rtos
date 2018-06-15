@@ -162,7 +162,7 @@ pub fn print(args: Arguments) {
     use core::fmt::Write;
     unsafe {
         let mut locked = WRITER.try_lock();
-        if locked.is_some(){
+        if locked.is_some() {
             let mut unwrapped = locked.expect("vga_buffer write_at failed");
             unwrapped.write_fmt(args);
         }
@@ -172,7 +172,10 @@ pub fn print(args: Arguments) {
 #[allow(dead_code)]
 pub fn write(str: &str) {
     use core::fmt::Write;
-    WRITER.lock().write_str(str).expect("vga_buffer write failed");
+    WRITER
+        .lock()
+        .write_str(str)
+        .expect("vga_buffer write failed");
 }
 
 pub fn write_at(str: &str, row: u8, col: u8, color: Color) {
@@ -181,7 +184,7 @@ pub fn write_at(str: &str, row: u8, col: u8, color: Color) {
     }
     unsafe {
         let mut locked = WRITER.try_lock();
-        if locked.is_some(){
+        if locked.is_some() {
             let mut unwrapped = locked.expect("vga_buffer write_at failed");
             unwrapped.write_at(str, row, col, color);
         }

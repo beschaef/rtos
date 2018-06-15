@@ -1,6 +1,7 @@
 use alloc::Vec;
 use cpuio;
 use features::clock::Clock;
+use features::get_cpu_freq;
 use features::keyboard;
 use memory::MemoryController;
 use pic::ChainedPics;
@@ -8,12 +9,11 @@ use spin::{Mutex, Once};
 use vga_buffer;
 use vga_buffer::Color;
 use x86_64;
+use x86_64::instructions::rdtsc;
 use x86_64::structures::idt::{ExceptionStackFrame, Idt, PageFaultErrorCode};
 use x86_64::structures::tss::TaskStateSegment;
 use x86_64::VirtualAddress;
-use x86_64::instructions::rdtsc;
 use HEAP_ALLOCATOR;
-use features::get_cpu_freq;
 
 static mut PID_COUNTER: usize = 0;
 
@@ -22,7 +22,8 @@ static mut RUNNING_TASK: Mutex<TaskData> = Mutex::new(TaskData {
     cpu_flags: 0,
     stack_pointer: x86_64::VirtualAddress(0),
     instruction_pointer: x86_64::VirtualAddress(0),
-    status: TaskStatus::RUNNING
+    status: TaskStatus::RUNNING,
+    sleep_ticks: 0,
 });
 
 fn increment_pid() -> usize {
@@ -34,20 +35,14 @@ fn increment_pid() -> usize {
 
 lazy_static! {
     static ref TASKS: Mutex<Vec<TaskData>> = Mutex::new(vec![]);
-    static ref IDLE_TASK: Mutex<TaskData> = Mutex::new(TaskData::new(
-        0,
-        x86_64::VirtualAddress(0),
-        x86_64::VirtualAddress(idle_task as usize),
-        TaskStatus::IDLE
-    ));
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TaskStatus {
     IDLE,
     READY,
     RUNNING,
-    SLEEPING
+    SLEEPING,
 }
 
 #[derive(Debug, Clone)]
@@ -57,6 +52,7 @@ pub struct TaskData {
     stack_pointer: VirtualAddress,
     instruction_pointer: VirtualAddress,
     status: TaskStatus,
+    sleep_ticks: usize,
 }
 
 ///unsafe block is actually safe because we're initializing the tasks before the interrupts are enabled
@@ -65,7 +61,7 @@ impl TaskData {
         cpu_flags: u64,
         stack_pointer: VirtualAddress,
         instruction_pointer: VirtualAddress,
-        status: TaskStatus
+        status: TaskStatus,
     ) -> Self {
         TaskData {
             pid: increment_pid(),
@@ -73,6 +69,25 @@ impl TaskData {
             stack_pointer,
             instruction_pointer,
             status,
+            sleep_ticks: 0,
+        }
+    }
+
+    pub fn copy(
+        pid: usize,
+        cpu_flags: u64,
+        stack_pointer: VirtualAddress,
+        instruction_pointer: VirtualAddress,
+        status: TaskStatus,
+        sleep_ticks: usize,
+    ) -> Self {
+        TaskData {
+            pid,
+            cpu_flags,
+            stack_pointer,
+            instruction_pointer,
+            status,
+            sleep_ticks,
         }
     }
 
@@ -82,7 +97,8 @@ impl TaskData {
             cpu_flags: 0,
             stack_pointer: x86_64::VirtualAddress(0),
             instruction_pointer: x86_64::VirtualAddress(0),
-            status: TaskStatus::RUNNING
+            status: TaskStatus::RUNNING,
+            sleep_ticks: 0,
         }
     }
 }
@@ -95,7 +111,7 @@ pub fn sched_init(memory_controller: &mut MemoryController) {
             0,
             x86_64::VirtualAddress(memory.top()),
             x86_64::VirtualAddress(uptime1 as usize),
-            TaskStatus::READY
+            TaskStatus::READY,
         ),
     );
     let memory = memory_controller.alloc_stack(2).expect("Ooopsie");
@@ -147,7 +163,6 @@ pub fn uptime1() {
             9 => vga_buffer::write_at("0", 0, 0 + 7, color),
             _ => vga_buffer::write_at("0", 0, 0 + 7, color),
         }
-        early_trace!("CHECK");
         msleep(1000);
     }
 }
@@ -177,40 +192,44 @@ pub fn uptime2() {
             9 => vga_buffer::write_at("0", 2, 0 + 7, color),
             _ => vga_buffer::write_at("0", 2, 0 + 7, color),
         }
-        early_trace!("CHECK");
         msleep(1000);
     }
 }
 
-fn idle_task(){
+fn idle_task() {
     early_trace!("IDLE");
-    loop{
-        unsafe{asm!("pause":::: "intel", "volatile");}
+    loop {
+        unsafe {
+            asm!("pause":::: "intel", "volatile");
+        }
     }
 }
 
-
 pub fn msleep(ms: u64) {
+    trace!();
     let one_sec = get_cpu_freq();
-//    let time = one_sec * (1000 / ms) + rdtsc();
-//    trace!("sleep until {}",time);
-//    loop {
-//        if time > rdtsc() {
-//        }
-//        else {
-//            break;
-//        }
-//    }
+    //    let time = one_sec * (1000 / ms) + rdtsc();
+    //    trace!("sleep until {}",time);
+    //    loop {
+    //        if time > rdtsc() {
+    //        }
+    //        else {
+    //            break;
+    //        }
+    //    }
 
     let mut time = (one_sec * (ms / 1000)); // (one_sec * ms / 1000) as i64; doesnt work!
     let mut tsc = time + rdtsc();
-    trace!("sleep until {}",tsc);
-    while tsc > rdtsc() {
-        unsafe{asm!("INT 20h"::::"intel","volatile");}
+    trace!("sleep until: {}", tsc);
+    unsafe {
+        {
+            RUNNING_TASK.lock().sleep_ticks = tsc as usize;
+        }
+        asm!("INT 20h"::::"intel","volatile");
     }
-    //trace!("after while");
-//    return time;
 
+    //trace!("after while");
+    //    return time;
 }
 
 pub fn schedule(f: &mut ExceptionStackFrame) {
@@ -218,13 +237,51 @@ pub fn schedule(f: &mut ExceptionStackFrame) {
     let cpuflags = f.cpu_flags;
     let stackpointer = f.stack_pointer;
     let instructionpointer = f.instruction_pointer;
-    let to_run = TASKS.lock().pop().expect("scheduler schedule failed");
+    // check if a task is ready to run
+    let tsc = rdtsc();
+    let to_run =  if TASKS.lock().last().expect("last").status == TaskStatus::READY {
+        early_trace!("popped ready task");
+        let x = TASKS.lock().pop().expect("popped");
+        x
+    } else if TASKS.lock().last().expect("tadaa").sleep_ticks < tsc as usize{
+
+        let x = TASKS.lock().pop().expect("popped");
+        early_trace!("popped after sleep task {}", x.sleep_ticks);
+        x
+    } else if TASKS.lock().last().expect("check idle").status == TaskStatus::IDLE {
+        early_trace!("do nothing");
+        return;
+    } else {
+        early_trace!("popped idle");
+        let x = TASKS.lock().remove(0);
+        x
+    };
+    //let to_run = TASKS.lock().pop().expect("scheduler schedule failed");
     //trace!("task: {}", to_run.instruction_pointer);
+
+
+
+    // TODO: Check TaskStatus, falls ready setze auf running, idle bleibt idle
+
     unsafe {
-        if RUNNING_TASK.lock().pid != 0 { // PID = 0 --> main function
+        if RUNNING_TASK.lock().pid != 0 {
+            let pid_c = RUNNING_TASK.lock().pid;
+            let sleep_ticks_c = RUNNING_TASK.lock().sleep_ticks;
+            // PID = 0 --> main function
             //let old = TaskData::new(cpuflags, stackpointer, instructionpointer, to_run.status);
-            let old = RUNNING_TASK.lock().clone();
-            TASKS.lock().insert(0, old);
+            let old = TaskData::copy(
+                pid_c,
+                cpuflags,
+                stackpointer,
+                instructionpointer,
+                TaskStatus::RUNNING,
+                sleep_ticks_c,
+            );
+            let mut position = 1;
+            if old.status == TaskStatus::IDLE{
+                position = 0
+            }
+            TASKS.lock().insert(position, old);
         }
         f.stack_pointer = to_run.stack_pointer;
         f.instruction_pointer = to_run.instruction_pointer;

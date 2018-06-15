@@ -57,9 +57,9 @@ extern crate bit_field;
 extern crate cpuio;
 extern crate linked_list_allocator;
 
-use features::{get_cpu_freq};
-use trace::*;
+use features::get_cpu_freq;
 use os_bootinfo::BootInfo;
+use trace::*;
 
 //use memory::heap_allocator::BumpAllocator;
 
@@ -103,13 +103,12 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
     let freq = get_cpu_freq();
 
     println!("freq: {}", freq);
-    println!("{}",function!());
+    println!("{}", function!());
     early_trace!();
     early_trace!("TEST TRACE");
     early_trace!();
     early_trace!("Calculated CPU-frequency: {}", freq);
     early_trace!("Heap Size: {}", HEAP_SIZE);
-
 
     // invoke a breakpoint exception
     //x86_64::instructions::interrupts::int3();

@@ -1,23 +1,22 @@
 use cpuio::UnsafePort;
-use x86_64::instructions::rdtsc;
 use spin::Mutex;
 use x86_64;
+use x86_64::instructions::rdtsc;
 
 struct Trace {
     //port: cpuio::UnsafePort,
 }
 
 lazy_static! {
-    static ref TRACE: Mutex<Trace> = Mutex::new(Trace{});
+    static ref TRACE: Mutex<Trace> = Mutex::new(Trace {});
     static ref TEMP: u8 = 0;
 }
 
 impl Trace {
-
     pub fn write(&mut self, fn_name: &str, info_text: &str) {
         let ts = rdtsc();
-        for x in format!("{:<25} - tsc: {:15?} - {:?}\n",fn_name,ts, info_text).bytes() {
-            unsafe{
+        for x in format!("{:<25} - tsc: {:15?} - {:?}\n", fn_name, ts, info_text).bytes() {
+            unsafe {
                 UnsafePort::new(0x03f8).write(x);
             }
         }
@@ -41,7 +40,6 @@ pub fn trace_info_without_interrupts(fn_name: &str, info_text: &str) {
         }
     }
 }
-
 
 macro_rules! trace {
     () => (simple_trace!(""));
@@ -72,7 +70,5 @@ macro_rules! function {
         }
         let name = type_name_of(f);
         &name[6..name.len() - 4]
-    }}
+    }};
 }
-
-

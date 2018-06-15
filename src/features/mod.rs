@@ -1,8 +1,8 @@
 pub mod clock;
 pub mod keyboard;
 
-use x86_64;
 use cpuio;
+use x86_64;
 
 static mut CPU_FREQ: usize = 0;
 

@@ -29,7 +29,10 @@ impl FrameAllocator for AreaFrameAllocator {
             if frame > current_area_last_frame {
                 // all frames of current area are used, switch to next area
                 self.choose_next_area();
-            } else if self.current_area.expect("area_frame_allocator allocate_frame failed").region_type != MemoryRegionType::Usable {
+            } else if self.current_area
+                .expect("area_frame_allocator allocate_frame failed")
+                .region_type != MemoryRegionType::Usable
+            {
                 self.choose_next_area();
             } else {
                 // frame is unused, increment `next_free_frame` and return it
