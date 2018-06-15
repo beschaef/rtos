@@ -12,7 +12,7 @@ build:
 clean:
 	cargo clean
 	cargo update
-	rm TRACE_*
+	rm logs/TRACE_*
 
 # used for formatting rust code
 fmt:
