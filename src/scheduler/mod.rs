@@ -121,7 +121,17 @@ pub fn sched_init(memory_controller: &mut MemoryController) {
             0,
             x86_64::VirtualAddress(memory.top()),
             x86_64::VirtualAddress(uptime2 as usize),
-            TaskStatus::READY
+            TaskStatus::READY,
+        ),
+    );
+    let memory = memory_controller.alloc_stack(2).expect("Ooopsie");
+    TASKS.lock().insert(
+        0,
+        TaskData::new(
+            0,
+            x86_64::VirtualAddress(memory.top()),
+            x86_64::VirtualAddress(uptime3 as usize),
+            TaskStatus::READY,
         ),
     );
     let memory = memory_controller.alloc_stack(2).expect("Ooopsie");
@@ -131,7 +141,7 @@ pub fn sched_init(memory_controller: &mut MemoryController) {
             0,
             x86_64::VirtualAddress(memory.top()),
             x86_64::VirtualAddress(idle_task as usize),
-            TaskStatus::IDLE
+            TaskStatus::IDLE,
         ),
     );
 
@@ -172,14 +182,13 @@ pub fn uptime2() {
     early_trace!();
     //trace!("started uptime2");
     let color = Color::LightGreen;
-    let mut l = -1;
-    let mut x = 0;
+    let mut r = 0;
     loop {
-        //trace!("loop uptime2");
+        //trace!("loop uptime1");
 
-        l = (l + 1) % 9;
+        r = (r + 1) % 9;
         let color = Color::LightGreen;
-        match l {
+        match r {
             0 => vga_buffer::write_at("1", 2, 0 + 7, color),
             1 => vga_buffer::write_at("2", 2, 0 + 7, color),
             2 => vga_buffer::write_at("3", 2, 0 + 7, color),
@@ -191,6 +200,34 @@ pub fn uptime2() {
             8 => vga_buffer::write_at("9", 2, 0 + 7, color),
             9 => vga_buffer::write_at("0", 2, 0 + 7, color),
             _ => vga_buffer::write_at("0", 2, 0 + 7, color),
+        }
+        msleep(1000);
+    }
+}
+
+pub fn uptime3() {
+    msleep(1000);
+    early_trace!();
+    //trace!("started uptime2");
+    let color = Color::LightGreen;
+    let mut r = 0;
+    loop {
+        //trace!("loop uptime1");
+
+        r = (r + 1) % 9;
+        let color = Color::LightGreen;
+        match r {
+            0 => vga_buffer::write_at("1", 4, 0 + 7, color),
+            1 => vga_buffer::write_at("2", 4, 0 + 7, color),
+            2 => vga_buffer::write_at("3", 4, 0 + 7, color),
+            3 => vga_buffer::write_at("4", 4, 0 + 7, color),
+            4 => vga_buffer::write_at("5", 4, 0 + 7, color),
+            5 => vga_buffer::write_at("6", 4, 0 + 7, color),
+            6 => vga_buffer::write_at("7", 4, 0 + 7, color),
+            7 => vga_buffer::write_at("8", 4, 0 + 7, color),
+            8 => vga_buffer::write_at("9", 4, 0 + 7, color),
+            9 => vga_buffer::write_at("0", 4, 0 + 7, color),
+            _ => vga_buffer::write_at("0", 4, 0 + 7, color),
         }
         msleep(1000);
     }
@@ -239,16 +276,15 @@ pub fn schedule(f: &mut ExceptionStackFrame) {
     let instructionpointer = f.instruction_pointer;
     // check if a task is ready to run
     let tsc = rdtsc();
-    let to_run =  if TASKS.lock().last().expect("last").status == TaskStatus::READY {
+    let to_run = if TASKS.lock().last().expect("last").status == TaskStatus::READY {
         early_trace!("popped ready task");
         let x = TASKS.lock().pop().expect("popped");
         x
-    } else if TASKS.lock().last().expect("tadaa").sleep_ticks < tsc as usize{
-
+    } else if TASKS.lock().last().expect("tadaa").sleep_ticks < tsc as usize {
         let x = TASKS.lock().pop().expect("popped");
         early_trace!("popped after sleep task {}", x.sleep_ticks);
         x
-    } else if TASKS.lock().last().expect("check idle").status == TaskStatus::IDLE {
+    } else if unsafe{RUNNING_TASK.lock().status == TaskStatus::IDLE} {
         early_trace!("do nothing");
         return;
     } else {
@@ -259,22 +295,23 @@ pub fn schedule(f: &mut ExceptionStackFrame) {
     //let to_run = TASKS.lock().pop().expect("scheduler schedule failed");
     //trace!("task: {}", to_run.instruction_pointer);
 
-
-
-    // TODO: Check TaskStatus, falls ready setze auf running, idle bleibt idle
-
     unsafe {
         if RUNNING_TASK.lock().pid != 0 {
             let pid_c = RUNNING_TASK.lock().pid;
             let sleep_ticks_c = RUNNING_TASK.lock().sleep_ticks;
             // PID = 0 --> main function
             //let old = TaskData::new(cpuflags, stackpointer, instructionpointer, to_run.status);
+            let new_status = if RUNNING_TASK.lock().status == TaskStatus::IDLE {
+                TaskStatus::IDLE
+            } else {
+                TaskStatus::RUNNING
+            };
             let old = TaskData::copy(
                 pid_c,
                 cpuflags,
                 stackpointer,
                 instructionpointer,
-                TaskStatus::RUNNING,
+                new_status,
                 sleep_ticks_c,
             );
             let mut position = 1;
