@@ -76,6 +76,16 @@ pub fn sched_init(memory_controller: &mut MemoryController) {
         TaskData::new(
             0,
             x86_64::VirtualAddress(memory.top()),
+            x86_64::VirtualAddress(tetris as usize),
+            TaskStatus::READY,
+        ),
+    );
+    let memory = memory_controller.alloc_stack(2).expect("Ooopsie");
+    TASKS.lock().insert(
+        0,
+        TaskData::new(
+            0,
+            x86_64::VirtualAddress(memory.top()),
             x86_64::VirtualAddress(idle_task as usize),
             TaskStatus::IDLE,
         ),

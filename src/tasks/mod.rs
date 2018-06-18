@@ -168,6 +168,25 @@ pub fn idle_task() {
     }
 }
 
+pub fn tetris() {
+    msleep(1000);
+    early_trace!();
+    let mut r = 0;
+    // let matrix = 40*40 array
+    loop {
+        //trace!("loop uptime1");
+
+        let color = Color::LightGreen;
+        let text = &format!("##");
+        vga_buffer::write_at(text, 8, 50, color);
+        let text = &format!("##");
+        vga_buffer::write_at(text, 8, 50, color);
+
+        early_trace!("Uptime5 written {:?}",text);
+        msleep(200);
+    }
+}
+
 fn increment_pid() -> usize {
     unsafe {
         PID_COUNTER += 1;
