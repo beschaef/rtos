@@ -7,7 +7,7 @@ use volatile::Volatile;
 use x86_64;
 
 #[allow(dead_code)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 #[repr(u8)]
 
 pub enum Color {
@@ -80,12 +80,12 @@ impl Writer {
         }
     }
 
-    pub fn write_at(&mut self, str: &str, row: u8, col: u8, color: Color) {
+    pub fn write_at(&mut self, str: &str, row: u8, col: u8, color: Color, background_color: Color) {
         let mut i = 0;
         for byte in str.bytes() {
             self.buffer.chars[row as usize][(col + i)as usize].write(ScreenChar {
                 ascii_character: byte,
-                color_code: ColorCode::new(color, Color::Brown),
+                color_code: ColorCode::new(color, background_color),
             });
             i += 1;
         }
@@ -182,14 +182,17 @@ pub fn write(str: &str) {
         .write_str(str)
         .expect("vga_buffer write failed");
 }
+pub fn write_at(str: &str, row: u8, col: u8, color: Color){
+    write_at_background(str, row, col, color, Color::Brown);
+}
 
-pub fn write_at(str: &str, row: u8, col: u8, color: Color) {
+pub fn write_at_background(str: &str, row: u8, col: u8, color: Color, background_color: Color) {
     unsafe {
         x86_64::instructions::interrupts::disable();
         let locked = WRITER.try_lock();
         if locked.is_some() {
             let mut unwrapped = locked.expect("vga_buffer write_at failed");
-            unwrapped.write_at(str, row, col, color);
+            unwrapped.write_at(str, row, col, color, background_color);
         }
     }
     unsafe {
