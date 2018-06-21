@@ -2,8 +2,9 @@ use vga_buffer;
 use vga_buffer::Color;
 use features::msleep;
 use x86_64::VirtualAddress;
+use x86_64::instructions::rdtsc;
 use scheduler::RUNNING_TASK;
-use alloc::String;
+use alloc::Vec;
 
 static mut PID_COUNTER: usize = 0;
 
@@ -160,18 +161,10 @@ pub fn uptime_temp() {
     finish_task();
 }
 
-pub fn idle_task() {
-    early_trace!("IDLE");
-    loop {
-        unsafe {
-            asm!("pause":::: "intel", "volatile");
-        }
-    }
-}
-
 pub fn tetris() {
     msleep(1000);
     early_trace!();
+    let mut gameover = false;
 
     const BOARD_WIDTH: u8 = 20;
     const BOARD_HEIGHT: u8 = 15;
@@ -202,14 +195,103 @@ pub fn tetris() {
         posy: i8,
         oldx: i8,
         oldy: i8,
-        shape: String,
+        shape: Vec<Vec<u8>>,
     }
 
     impl Piece {
         pub fn print_piece(&mut self){
-            vga_buffer::write_at_background(" ", ROW_OFFSET + self.oldy as u8, COL_OFFSET +self.oldx as u8, Color::Black, Color::Black);
-            vga_buffer::write_at_background(&self.shape, ROW_OFFSET + self.posy as u8, COL_OFFSET +self.posx as u8, self.color, Color::Black);
+            self.each_point(&mut |row, col| {
+                let oldx = self.oldx + col;
+                let oldy = self.oldy + row;
+                vga_buffer::write_at_background(" ", ROW_OFFSET + oldy as u8, COL_OFFSET +oldx as u8, Color::Black, Color::Black);
+            });
+            self.each_point(&mut |row, col| {
+                let posx = self.posx + col;
+                let posy = self.posy + row;
+                vga_buffer::write_at_background("#", ROW_OFFSET + posy as u8, COL_OFFSET +posx as u8, self.color, Color::Black);
+
+            });
+
         }
+
+        /*pub fn clone_piece(&mut self, x: i8, y: i8) -> Piece{
+            let mut new_piece = Piece{
+                oldx: self.posx,
+                posx: self.posx + x,
+                oldy: self.posy,
+                posy: self.posy + y,
+                color: self.color,
+                shape: Vec::with_capacity(self.shape.len())
+            };
+
+            for row in &self.shape {
+                new_piece.shape.push(row.clone());
+            }
+            new_piece
+        }*/
+
+        pub fn new_random_piece() -> Piece {
+            let mut piece = Piece{
+                oldx: 0,
+                posx: (BOARD_WIDTH/2) as i8,
+                oldy: 0,
+                posy: 0,
+                color: Color::Green,
+                shape: vec![vec![0]]
+            };
+
+            //generate random numer between 0 and 6
+            let i = rdtsc()%7;
+
+            match i {
+                0 => {
+                    piece.color = Color::Green;
+                    piece.shape = vec![vec![1, 1],
+                                       vec![1, 1]];
+                },
+                1 => {
+                    piece.color = Color::Brown;
+                    piece.shape = vec![vec![0, 0, 1],
+                                       vec![1, 1, 1],
+                                       vec![0, 0, 0]];
+                },
+                2 => {
+                    piece.color = Color::Blue;
+                    piece.shape = vec![vec![1, 0, 0],
+                                       vec![1, 1, 1],
+                                       vec![0, 0, 0]];
+                },
+                3 => {
+                    piece.color = Color::Cyan;
+                    piece.shape = vec![vec![0, 1, 0],
+                                       vec![1, 1, 1],
+                                       vec![0, 0, 0]];
+                },
+                4 => {
+                    piece.color = Color::Magenta;
+                    piece.shape = vec![vec![0, 1, 1],
+                                       vec![1, 1, 0],
+                                       vec![0, 0, 0]];
+                },
+                5 => {
+                    piece.color = Color::White;
+                    piece.shape = vec![vec![1, 1, 0],
+                                       vec![0, 1, 1],
+                                       vec![0, 0, 0]];
+                },
+                6 => {
+                    piece.color = Color::Yellow;
+                    piece.shape = vec![vec![0, 0, 0, 0],
+                                       vec![1, 1, 1, 1],
+                                       vec![0, 0, 0, 0],
+                                       vec![0, 0, 0, 0]];
+                },
+                _ => println!("something else"),
+            }
+            piece
+
+        }
+
 
         pub fn move_piece(&mut self, board: &Board, x: i8, y: i8) -> bool{
             let mut new_piece = Piece{
@@ -218,8 +300,12 @@ pub fn tetris() {
                 oldy: self.posy,
                 posy: self.posy + y,
                 color: self.color,
-                shape: String::from("#"),
+                shape: Vec::with_capacity(self.shape.len())
             };
+
+            for row in &self.shape {
+                new_piece.shape.push(row.clone());
+            }
 
             if new_piece.collision_test(board){
                 false
@@ -235,42 +321,73 @@ pub fn tetris() {
 
         pub fn collision_test(&mut self, board: &Board) -> bool {
             let mut found = false;
+            self.each_point(&mut |row, col| {
+                if !found {
+                    let x = self.posx + col;
+                    let y = self.posy + row;
+                    if x < 0 || x >= (BOARD_WIDTH as i8) || y < 0 || y >= (BOARD_HEIGHT as i8) ||
+                        board.cells[y as usize][x as usize] != None {
+                        found = true;
+                    }
+                }
+            });
 
-            if self.posx < 0 || self.posx >= (BOARD_WIDTH as i8) || self.posy < 0 || self.posy >= (BOARD_HEIGHT as i8) ||
-                (board.cells[self.posy as usize][self.posx as usize] != None) {
-                found = true;
-            }
             found
         }
 
         pub fn lock_piece(&mut self, board: &mut Board) {
-            board.cells[self.posy as usize][self.posx as usize] = Some(self.color);
+            self.each_point(&mut |row, col| {
+                let x = self.posx + col;
+                let y = self.posy + row;
+                board.cells[y as usize][x as usize] = Some(self.color);
+            });
+        }
+
+        fn each_point(&self, callback: &mut FnMut(i8, i8)) {
+            let piece_width = self.shape.len() as i8;
+            for row in 0..piece_width {
+                for col in 0..piece_width {
+                    if self.shape[row as usize][col as usize] != 0 {
+                        callback(row, col);
+                    }
+                }
+            }
         }
     }
 
 
 
-    loop {
-        let mut board = Board{
-            cells: [[None; BOARD_WIDTH as usize]; BOARD_HEIGHT as usize]
-        };
+    let mut board = Board{
+        cells: [[None; BOARD_WIDTH as usize]; BOARD_HEIGHT as usize]
+    };
 
-        let mut piece = Piece{
-            color: Color::Green, shape: String::from("#"),posx:(BOARD_WIDTH/2) as i8, posy: 0, oldx:0, oldy:0
-        };
+    let mut piece = Piece::new_random_piece();
 
-        board.render_board();
+    board.render_board();
+    piece.print_piece();
+
+    while!gameover{
         piece.print_piece();
-
-        loop{
-            msleep(2000);
-            if !piece.move_piece(&board, 0, 1){
-                piece.lock_piece(&mut board);
-                piece = Piece{
-                    color: Color::Green, shape: String::from("#"),posx:(BOARD_WIDTH/2) as i8, posy: 0, oldx:0, oldy:0
-                };
+        msleep(1000);
+        if !piece.move_piece(&board, 0, 1){
+            piece.lock_piece(&mut board);
+            piece = Piece::new_random_piece();
+            if piece.collision_test(&board){
+                print!("Game over!");
+                gameover = true;
+                msleep(1000);
             }
-            piece.print_piece();
+
+        }
+    }
+    finish_task();
+}
+
+pub fn idle_task() {
+    early_trace!("IDLE");
+    loop {
+        unsafe {
+            asm!("pause":::: "intel", "volatile");
         }
     }
 }
