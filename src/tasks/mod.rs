@@ -195,16 +195,18 @@ pub fn tetris() {
         posy: i8,
         oldx: i8,
         oldy: i8,
+        oldshape: Vec<Vec<u8>>,
         shape: Vec<Vec<u8>>,
     }
 
     impl Piece {
         pub fn print_piece(&mut self){
-            self.each_point(&mut |row, col| {
+            self.each_old_point(&mut |row, col| {
                 let oldx = self.oldx + col;
                 let oldy = self.oldy + row;
                 vga_buffer::write_at_background(" ", ROW_OFFSET + oldy as u8, COL_OFFSET +oldx as u8, Color::Black, Color::Black);
             });
+
             self.each_point(&mut |row, col| {
                 let posx = self.posx + col;
                 let posy = self.posy + row;
@@ -214,29 +216,14 @@ pub fn tetris() {
 
         }
 
-        /*pub fn clone_piece(&mut self, x: i8, y: i8) -> Piece{
-            let mut new_piece = Piece{
-                oldx: self.posx,
-                posx: self.posx + x,
-                oldy: self.posy,
-                posy: self.posy + y,
-                color: self.color,
-                shape: Vec::with_capacity(self.shape.len())
-            };
-
-            for row in &self.shape {
-                new_piece.shape.push(row.clone());
-            }
-            new_piece
-        }*/
-
         pub fn new_random_piece() -> Piece {
             let mut piece = Piece{
-                oldx: 0,
+                oldx: (BOARD_WIDTH/2) as i8,
                 posx: (BOARD_WIDTH/2) as i8,
                 oldy: 0,
                 posy: 0,
                 color: Color::Green,
+                oldshape: vec![vec![0]],
                 shape: vec![vec![0]]
             };
 
@@ -246,41 +233,62 @@ pub fn tetris() {
             match i {
                 0 => {
                     piece.color = Color::Green;
+                    piece.oldshape = vec![vec![1, 1],
+                                       vec![1, 1]];
                     piece.shape = vec![vec![1, 1],
                                        vec![1, 1]];
                 },
                 1 => {
                     piece.color = Color::Brown;
+                    piece.oldshape = vec![vec![0, 0, 1],
+                                       vec![1, 1, 1],
+                                       vec![0, 0, 0]];
                     piece.shape = vec![vec![0, 0, 1],
                                        vec![1, 1, 1],
                                        vec![0, 0, 0]];
                 },
                 2 => {
                     piece.color = Color::Blue;
+                    piece.oldshape = vec![vec![1, 0, 0],
+                                       vec![1, 1, 1],
+                                       vec![0, 0, 0]];
                     piece.shape = vec![vec![1, 0, 0],
                                        vec![1, 1, 1],
                                        vec![0, 0, 0]];
                 },
                 3 => {
                     piece.color = Color::Cyan;
+                    piece.oldshape = vec![vec![0, 1, 0],
+                                       vec![1, 1, 1],
+                                       vec![0, 0, 0]];
                     piece.shape = vec![vec![0, 1, 0],
                                        vec![1, 1, 1],
                                        vec![0, 0, 0]];
                 },
                 4 => {
                     piece.color = Color::Magenta;
+                    piece.oldshape = vec![vec![0, 1, 1],
+                                       vec![1, 1, 0],
+                                       vec![0, 0, 0]];
                     piece.shape = vec![vec![0, 1, 1],
                                        vec![1, 1, 0],
                                        vec![0, 0, 0]];
                 },
                 5 => {
                     piece.color = Color::White;
+                    piece.oldshape = vec![vec![1, 1, 0],
+                                       vec![0, 1, 1],
+                                       vec![0, 0, 0]];
                     piece.shape = vec![vec![1, 1, 0],
                                        vec![0, 1, 1],
                                        vec![0, 0, 0]];
                 },
                 6 => {
                     piece.color = Color::Yellow;
+                    piece.oldshape = vec![vec![0, 0, 0, 0],
+                                       vec![1, 1, 1, 1],
+                                       vec![0, 0, 0, 0],
+                                       vec![0, 0, 0, 0]];
                     piece.shape = vec![vec![0, 0, 0, 0],
                                        vec![1, 1, 1, 1],
                                        vec![0, 0, 0, 0],
@@ -300,11 +308,13 @@ pub fn tetris() {
                 oldy: self.posy,
                 posy: self.posy + y,
                 color: self.color,
+                oldshape: Vec::with_capacity(self.oldshape.len()),
                 shape: Vec::with_capacity(self.shape.len())
             };
 
             for row in &self.shape {
                 new_piece.shape.push(row.clone());
+                new_piece.oldshape.push(row.clone());
             }
 
             if new_piece.collision_test(board){
@@ -315,8 +325,41 @@ pub fn tetris() {
                 self.oldy= self.posy;
                 self.posy= self.posy + y;
 
+                self.oldshape = Vec::with_capacity(self.shape.len());
+                for row in &self.shape {
+                    self.oldshape.push(row.clone());
+                }
+
+                self.print_piece();
+
                 true
             }
+        }
+
+        fn rotate(&mut self) {
+            // TODO collision_test
+
+            self.oldx = self.posx;
+            self.oldy = self.posy;
+            self.oldshape = Vec::with_capacity(self.shape.len());
+            for row in &self.shape {
+                self.oldshape.push(row.clone());
+            }
+
+            let size = self.shape.len();
+
+            for row in 0..size/2 {
+                for col in row..(size - row - 1) {
+                    let t = self.shape[row][col];
+
+                    self.shape[row][col] = self.shape[col][size - row - 1];
+                    self.shape[col][size - row - 1] = self.shape[size - row - 1][size - col - 1];
+                    self.shape[size - row - 1][size - col - 1] = self.shape[size - col - 1][row];
+                    self.shape[size - col - 1][row] = t;
+                }
+            }
+
+            self.print_piece();
         }
 
         pub fn collision_test(&mut self, board: &Board) -> bool {
@@ -343,6 +386,16 @@ pub fn tetris() {
             });
         }
 
+        fn each_old_point(&self, callback: &mut FnMut(i8, i8)) {
+            let piece_width = self.oldshape.len() as i8;
+            for row in 0..piece_width {
+                for col in 0..piece_width {
+                    if self.oldshape[row as usize][col as usize] != 0 {
+                        callback(row, col);
+                    }
+                }
+            }
+        }
         fn each_point(&self, callback: &mut FnMut(i8, i8)) {
             let piece_width = self.shape.len() as i8;
             for row in 0..piece_width {
@@ -365,8 +418,9 @@ pub fn tetris() {
 
     board.render_board();
     piece.print_piece();
-
+    let mut i = 0;
     while!gameover{
+        i = i+1;
         piece.print_piece();
         msleep(1000);
         if !piece.move_piece(&board, 0, 1){
