@@ -9,8 +9,8 @@ use x86_64::VirtualAddress;
 
 static mut PID_COUNTER: usize = 0;
 
-const BOARD_WIDTH: u8 = 10;//20
-const BOARD_HEIGHT: u8 = 12;//17
+const BOARD_WIDTH: u8 = 20;//20
+const BOARD_HEIGHT: u8 = 17;//17
 const ROW_OFFSET: u8 = 2;
 const COL_OFFSET: u8 = 50;
 
@@ -160,29 +160,59 @@ impl Piece {
     }
 
     pub fn rotate(&mut self) {
-        // TODO collision_test
-
-        self.oldx = self.posx;
-        self.oldy = self.posy;
-        self.oldshape = Vec::with_capacity(self.shape.len());
-        for row in &self.shape {
-            self.oldshape.push(row.clone());
-        }
 
         let size = self.shape.len();
 
+        let mut new_piece = Piece {
+            oldx: self.posx,
+            posx: self.posx,
+            oldy: self.posy,
+            posy: self.posy,
+            color: self.color,
+            oldshape: Vec::with_capacity(self.oldshape.len()),
+            shape: Vec::with_capacity(self.shape.len()),
+        };
+        new_piece.oldx = self.posx;
+        new_piece.oldy = self.posy;
+        for row in &self.shape {
+            new_piece.shape.push(row.clone());
+            new_piece.oldshape.push(row.clone());
+        }
+
         for row in 0..size / 2 {
             for col in row..(size - row - 1) {
-                let t = self.shape[row][col];
+                let t = new_piece.shape[row][col];
 
-                self.shape[row][col] = self.shape[col][size - row - 1];
-                self.shape[col][size - row - 1] = self.shape[size - row - 1][size - col - 1];
-                self.shape[size - row - 1][size - col - 1] = self.shape[size - col - 1][row];
-                self.shape[size - col - 1][row] = t;
+                new_piece.shape[row][col] = new_piece.shape[col][size - row - 1];
+                new_piece.shape[col][size - row - 1] = new_piece.shape[size - row - 1][size - col - 1];
+                new_piece.shape[size - row - 1][size - col - 1] = new_piece.shape[size - col - 1][row];
+                new_piece.shape[size - col - 1][row] = t;
             }
         }
 
-        self.print_piece();
+        if !new_piece.collision_test(){
+            self.oldx = self.posx;
+            self.oldy = self.posy;
+            self.oldshape = Vec::with_capacity(self.shape.len());
+            for row in &self.shape {
+                self.oldshape.push(row.clone());
+            }
+
+            for row in 0..size / 2 {
+                for col in row..(size - row - 1) {
+                    let t = self.shape[row][col];
+
+                    self.shape[row][col] = self.shape[col][size - row - 1];
+                    self.shape[col][size - row - 1] = self.shape[size - row - 1][size - col - 1];
+                    self.shape[size - row - 1][size - col - 1] = self.shape[size - col - 1][row];
+                    self.shape[size - col - 1][row] = t;
+                }
+            }
+
+            self.print_piece();
+        }
+
+
     }
 
     pub fn collision_test(&mut self) -> bool {
