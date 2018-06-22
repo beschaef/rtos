@@ -122,7 +122,6 @@ pub fn schedule(f: &mut ExceptionStackFrame) {
 
     unsafe {
         let not_finished = RUNNING_TASK.lock().status != TaskStatus::FINISHED;
-        //if RUNNING_TASK.lock().pid != 0 && not_finished {
         if not_finished {
             let pid_c = RUNNING_TASK.lock().pid;
             let sleep_ticks_c = RUNNING_TASK.lock().sleep_ticks;
