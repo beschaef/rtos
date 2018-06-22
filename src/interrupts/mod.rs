@@ -1,3 +1,4 @@
+use x86_64;
 use cpuio;
 use features::keyboard;
 use memory::MemoryController;
@@ -247,7 +248,9 @@ pub fn trigger_test_interrupt() {
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 extern "x86-interrupt" fn timer_handler(stack_frame: &mut ExceptionStackFrame) {
     //println!("timer_handler");
-
+    unsafe {
+        x86_64::instructions::interrupts::disable();
+    }
     let rax: usize;
     let rbx: usize;
     let rdx: usize;
@@ -286,13 +289,24 @@ extern "x86-interrupt" fn timer_handler(stack_frame: &mut ExceptionStackFrame) {
 
         asm!(""::"{rax}"(rax),"{rbx}"(rbx),"{rdx}"(rdx),"{rbp}"(rbp),"{rsi}"(rsi),"{rdi}"(rdi),"{r8}"(r8),"{r9}"(r9),"{r10}"(r10),"{r11}"(r11),"{r12}"(r12),"{r13}"(r13),"{r14}"(r14),"{r15}"(r15):::"intel","volatile");
 
-        PICS.lock().notify_end_of_interrupt(0x20 as u8);
+
+        x86_64::instructions::interrupts::enable();
+        {
+            let mut locked = PICS.try_lock();
+            while locked.is_none() {
+                locked = PICS.try_lock();
+            }
+            let mut unwrapped = locked.expect("vga_buffer write_at failed");
+            unwrapped.notify_end_of_interrupt(0x20 as u8);
+        }
+        x86_64::instructions::interrupts::enable();
     }
 }
 
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 extern "x86-interrupt" fn keyboard_handler(_stack_frame: &mut ExceptionStackFrame) {
     unsafe {
+        x86_64::instructions::interrupts::disable();
         let scancode: u8 = cpuio::UnsafePort::new(0x60).read();
         if let Some(c) = keyboard::from_scancode(scancode as usize) {
             print!("{:?}", c);
@@ -301,10 +315,18 @@ extern "x86-interrupt" fn keyboard_handler(_stack_frame: &mut ExceptionStackFram
             }
         }
     }
-    //println!("handler 1");
     unsafe {
-        PICS.lock().notify_end_of_interrupt(0x21 as u8);
+        {
+            let mut locked = PICS.try_lock();
+            if locked.is_some() {
+                let mut unwrapped = locked.expect("vga_buffer write_at failed");
+                unwrapped.notify_end_of_interrupt(0x21 as u8);
+            }
+        }
+
+        x86_64::instructions::interrupts::enable();
     }
+
 }
 
 extern "x86-interrupt" fn handler_2(_stack_frame: &mut ExceptionStackFrame) {

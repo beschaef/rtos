@@ -65,7 +65,7 @@ pub fn from_scancode(code: usize) -> Option<char> {
             return None;
         } // arrow up,
         0x50 => {
-            PIECE.try_lock().expect("LEFT PANIC").advance_game();
+            PIECE.try_lock().expect("DOWN PANIC").advance_game();
             return None;
         } // arrow down,
         0x4b => {
