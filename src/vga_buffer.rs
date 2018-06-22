@@ -83,7 +83,7 @@ impl Writer {
     pub fn write_at(&mut self, str: &str, row: u8, col: u8, color: Color, background_color: Color) {
         let mut i = 0;
         for byte in str.bytes() {
-            self.buffer.chars[row as usize][(col + i)as usize].write(ScreenChar {
+            self.buffer.chars[row as usize][(col + i) as usize].write(ScreenChar {
                 ascii_character: byte,
                 color_code: ColorCode::new(color, background_color),
             });
@@ -182,7 +182,7 @@ pub fn write(str: &str) {
         .write_str(str)
         .expect("vga_buffer write failed");
 }
-pub fn write_at(str: &str, row: u8, col: u8, color: Color){
+pub fn write_at(str: &str, row: u8, col: u8, color: Color) {
     write_at_background(str, row, col, color, Color::Black);
 }
 

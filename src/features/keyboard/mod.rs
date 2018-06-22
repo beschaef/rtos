@@ -60,10 +60,22 @@ pub fn from_scancode(code: usize) -> Option<char> {
         0x37 => '*', // Keypad
         0x4a => '-', // Keypad
         0x4e => '+', // Keypad,
-        0x48 => {PIECE.try_lock().expect("ROTATE PANIC").rotate();return None; }, // arrow up,
-        0x50 => {PIECE.try_lock().expect("LEFT PANIC").move_piece(0,1);return None;}, // arrow down,
-        0x4b => {PIECE.try_lock().expect("LEFT PANIC").move_piece(-1,0);return None;}, // arrow left,
-        0x4d => {PIECE.try_lock().expect("RIGHT PANIC").move_piece(1,0);return None;}, // arrow right
+        0x48 => {
+            PIECE.try_lock().expect("ROTATE PANIC").rotate();
+            return None;
+        } // arrow up,
+        0x50 => {
+            PIECE.try_lock().expect("LEFT PANIC").advance_game();
+            return None;
+        } // arrow down,
+        0x4b => {
+            PIECE.try_lock().expect("LEFT PANIC").move_piece(-1, 0);
+            return None;
+        } // arrow left,
+        0x4d => {
+            PIECE.try_lock().expect("RIGHT PANIC").move_piece(1, 0);
+            return None;
+        } // arrow right
         0x1c => '_', // Enter
         _ => return None,
     };
