@@ -57,7 +57,12 @@ pub fn from_scancode(code: usize) -> Option<char> {
         0x35 => '/',
         0x37 => '*', // Keypad
         0x4a => '-', // Keypad
-        0x4e => '+', // Keypad
+        0x4e => '+', // Keypad,
+        0x48 => '^', // arrow up,
+        0x50 => '|', // arrow down,
+        0x4b => '<', // arrow left,
+        0x4d => '>', // arrow right
+        0x1c => '_', // Enter
         _ => return None,
     };
 

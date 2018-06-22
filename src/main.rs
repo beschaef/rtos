@@ -58,7 +58,7 @@ extern crate bit_field;
 extern crate cpuio;
 extern crate linked_list_allocator;
 
-use features::get_cpu_freq;
+use features::{get_cpu_freq, msleep};
 use os_bootinfo::BootInfo;
 
 //use memory::heap_allocator::BumpAllocator;
@@ -117,7 +117,25 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
     scheduler::sched_init(&mut memory_controller);
     interrupts::init_timer();
     println!("after initialization of timer");
+    /*
+    let spin_mutex = spin::Mutex::new(0);
 
+    // Modify the data
+    let mut lock = spin_mutex.try_lock();
+    if locked.is_some() {
+        *data = 2;
+    }
+
+    let mut new_lock = spin_mutex.try_lock();
+    // Read the data
+    let result =
+    {
+        let mut new_lock= spin_mutex.try_lock();
+        if new_lock.is_some(){
+            *data
+        }
+    };
+*/
     /*
     let clock = features::clock::Clock::new(0,0);
     clock.uptime();
@@ -126,7 +144,9 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
     clock2.uptime();
     */
 
-    loop {}
+    loop {
+        msleep(1);
+    }
 }
 
 pub const HEAP_START: usize = 0o_000_001_000_000_0000;
