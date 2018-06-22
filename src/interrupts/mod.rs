@@ -99,7 +99,7 @@ pub fn init(memory_controller: &mut MemoryController) {
 
 pub fn init_timer() {
     unsafe {
-        println!("init timer");
+        early_trace!("init_timer");
         asm!("
            cli
            mov  al,34h
@@ -126,7 +126,6 @@ pub fn init_timer() {
             "
             :::: "intel","volatile");
     }
-    println!("never read this!!!");
 }
 
 extern "x86-interrupt" fn breakpoint_handler(stack_frame: &mut ExceptionStackFrame) {
