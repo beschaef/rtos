@@ -70,7 +70,7 @@ pub fn sched_init(memory_controller: &mut MemoryController) {
             TaskStatus::READY,
         ),
     );
-    let memory = memory_controller.alloc_stack(2).expect("Ooopsie");
+    let memory = memory_controller.alloc_stack(4).expect("Ooopsie");
     TASKS.lock().insert(
         0,
         TaskData::new(

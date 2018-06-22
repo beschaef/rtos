@@ -113,7 +113,7 @@ impl Piece {
         self.each_point(&mut |row, col| {
             let posx = self.posx + col;
             let posy = self.posy + row;
-            vga_buffer::write_at_background("#", ROW_OFFSET + posy as u8, COL_OFFSET +posx as u8, self.color, Color::Black);
+            vga_buffer::write_at_background("#", ROW_OFFSET + posy as u8, COL_OFFSET +posx as u8, self.color, self.color);
 
         });
 
@@ -235,9 +235,9 @@ impl Board {
     pub fn render_board(&self) {
         for y in 0..BOARD_HEIGHT {
             vga_buffer::write_at_background("|", ROW_OFFSET + y as u8, COL_OFFSET -1 as u8, Color::Red, Color::Red);
-            vga_buffer::write_at_background("|", ROW_OFFSET + y as u8, COL_OFFSET + BOARD_WIDTH + 1 as u8, Color::Red, Color::Red);
+            vga_buffer::write_at_background("|", ROW_OFFSET + y as u8, COL_OFFSET + BOARD_WIDTH as u8, Color::Red, Color::Red);
         }
-        for x in 0..BOARD_WIDTH +3  {
+        for x in 0..BOARD_WIDTH +2  {
             vga_buffer::write_at_background("-", ROW_OFFSET + BOARD_HEIGHT as u8, COL_OFFSET + x -1 as u8, Color::Red, Color::Red);
             //vga_buffer::write_at("-", ROW_OFFSET - 1, COL_OFFSET + x, Color::Red);
         }
