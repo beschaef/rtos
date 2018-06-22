@@ -9,8 +9,8 @@ use x86_64::VirtualAddress;
 
 static mut PID_COUNTER: usize = 0;
 
-const BOARD_WIDTH: u8 = 20;
-const BOARD_HEIGHT: u8 = 17;
+const BOARD_WIDTH: u8 = 10;//20
+const BOARD_HEIGHT: u8 = 12;//17
 const ROW_OFFSET: u8 = 2;
 const COL_OFFSET: u8 = 50;
 
@@ -279,38 +279,39 @@ impl Board {
     }
 
     pub fn clear_lines(&mut self) {
-        for row in (0..self.cells.len()).rev() {
-            while !self.cells[row].iter().any(|x| *x == None) {
-                self.cells[row] = self.cells[row - 1];
-                for col in 0..BOARD_WIDTH as usize {
-                    if self.cells[row][col] != None {
-                        vga_buffer::write_at_background(
-                            "#",
-                            ROW_OFFSET + row as u8,
-                            COL_OFFSET + col as u8,
-                            self.cells[row][col].unwrap(),
-                            Color::Black,
-                        );
-                    } else {
+
+        for row_to_check in (0..BOARD_HEIGHT as usize).rev() {
+            while !self.cells[row_to_check].iter().any(|x| *x == None) {
+                print!("!");
+                for row in (1..row_to_check+1).rev(){
+                    self.cells[row] = self.cells[row - 1];
+                    for col in 0..BOARD_WIDTH as usize {
+                        if self.cells[row][col] != None {
+                            vga_buffer::write_at_background(
+                                "#",
+                                ROW_OFFSET + row as u8,
+                                COL_OFFSET + col as u8,
+                                self.cells[row][col].unwrap(),
+                                Color::Black,
+                            );
+                        } else {
+                            vga_buffer::write_at_background(
+                                " ",
+                                ROW_OFFSET + row as u8,
+                                COL_OFFSET + col as u8,
+                                Color::Black,
+                                Color::Black,
+                            );
+                        }
                         vga_buffer::write_at_background(
                             " ",
-                            ROW_OFFSET + row as u8,
+                            ROW_OFFSET + row as u8 -1,
                             COL_OFFSET + col as u8,
                             Color::Black,
                             Color::Black,
                         );
                     }
-                    vga_buffer::write_at_background(
-                        " ",
-                        ROW_OFFSET + row  as u8 -1,
-                        COL_OFFSET + col as u8,
-                        Color::Black,
-                        Color::Black,
-                    );
-
                 }
-
-                self.cells[row - 1] = [None; BOARD_WIDTH as usize];
             }
         }
     }
