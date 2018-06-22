@@ -296,7 +296,7 @@ extern "x86-interrupt" fn keyboard_handler(_stack_frame: &mut ExceptionStackFram
     unsafe {
         let scancode: u8 = cpuio::UnsafePort::new(0x60).read();
         if let Some(c) = keyboard::from_scancode(scancode as usize) {
-            println!("{:?}", c);
+            print!("{:?}", c);
             if c == 'h' {
                 loop {}
             }

@@ -120,7 +120,7 @@ impl Piece {
     }
 
 
-    pub fn move_piece(&mut self, board: &Board, x: i8, y: i8) -> bool{
+    pub fn move_piece(&mut self, x: i8, y: i8) -> bool{
         let mut new_piece = Piece{
             oldx: self.posx,
             posx: self.posx + x,
@@ -136,7 +136,7 @@ impl Piece {
             new_piece.oldshape.push(row.clone());
         }
 
-        if new_piece.collision_test(board){
+        if new_piece.collision_test(){
             false
         }else{
             self.oldx= self.posx;
@@ -155,7 +155,7 @@ impl Piece {
         }
     }
 
-    fn rotate(&mut self) {
+    pub fn rotate(&mut self) {
         // TODO collision_test
 
         self.oldx = self.posx;
@@ -181,14 +181,14 @@ impl Piece {
         self.print_piece();
     }
 
-    pub fn collision_test(&mut self, board: &Board) -> bool {
+    pub fn collision_test(&mut self) -> bool {
         let mut found = false;
         self.each_point(&mut |row, col| {
             if !found {
                 let x = self.posx + col;
                 let y = self.posy + row;
                 if x < 0 || x >= (BOARD_WIDTH as i8) || y < 0 || y >= (BOARD_HEIGHT as i8) ||
-                    board.cells[y as usize][x as usize] != None {
+                    BOARD.lock().cells[y as usize][x as usize] != None {
                     found = true;
                 }
             }
@@ -197,11 +197,11 @@ impl Piece {
         found
     }
 
-    pub fn lock_piece(&mut self, board: &mut Board) {
+    pub fn lock_piece(&mut self) {
         self.each_point(&mut |row, col| {
             let x = self.posx + col;
             let y = self.posy + row;
-            board.cells[y as usize][x as usize] = Some(self.color);
+            BOARD.lock().cells[y as usize][x as usize] = Some(self.color);
         });
     }
 
@@ -246,7 +246,7 @@ impl Board {
 }
 
 lazy_static! {
-    static ref PIECE: Mutex<Piece> = Mutex::new(unsafe { Piece{
+    pub static ref PIECE: Mutex<Piece> = Mutex::new(unsafe { Piece{
         oldx: (BOARD_WIDTH/2) as i8,
         posx: (BOARD_WIDTH/2) as i8,
         oldy: 0,
@@ -254,6 +254,11 @@ lazy_static! {
         color: Color::Green,
         oldshape: vec![vec![0]],
         shape: vec![vec![0]]
+    }});
+
+    pub static ref BOARD: Mutex<Board> = Mutex::new(unsafe {
+    Board{
+        cells: [[None; BOARD_WIDTH as usize]; BOARD_HEIGHT as usize]
     }});
 }
 
@@ -415,21 +420,19 @@ pub fn tetris() {
     early_trace!();
     let mut gameover = false;
 
-    let mut board = Board{
-        cells: [[None; BOARD_WIDTH as usize]; BOARD_HEIGHT as usize]
-    };
+
 
     unsafe { PIECE.lock().new_random_piece();}
 
-    board.render_board();
+    BOARD.lock().render_board();
     unsafe { PIECE.lock().print_piece();}
     while!gameover{
         unsafe { PIECE.lock().print_piece();}
         msleep(1000);
-        if !unsafe { PIECE.lock().move_piece(&board, 0, 1)}{
-            unsafe { PIECE.lock().lock_piece(&mut board);}
+        if !unsafe { PIECE.lock().move_piece( 0, 1)}{
+            unsafe { PIECE.lock().lock_piece();}
             unsafe { PIECE.lock().new_random_piece();}
-            if unsafe { PIECE.lock().collision_test(&board)}{
+            if unsafe { PIECE.lock().collision_test()}{
                 print!("Game over!");
                 gameover = true;
                 msleep(1000);
