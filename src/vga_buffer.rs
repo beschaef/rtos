@@ -147,7 +147,7 @@ impl Write for Writer {
 lazy_static! {
     pub static ref WRITER: Mutex<Writer> = Mutex::new(Writer {
         column_position: 0,
-        color_code: ColorCode::new(Color::Cyan, Color::Brown),
+        color_code: ColorCode::new(Color::Cyan, Color::Black),
         buffer: unsafe { &mut *(0xb8000 as *mut Buffer) },
     });
 }
@@ -183,7 +183,7 @@ pub fn write(str: &str) {
         .expect("vga_buffer write failed");
 }
 pub fn write_at(str: &str, row: u8, col: u8, color: Color){
-    write_at_background(str, row, col, color, Color::Brown);
+    write_at_background(str, row, col, color, Color::Black);
 }
 
 pub fn write_at_background(str: &str, row: u8, col: u8, color: Color, background_color: Color) {

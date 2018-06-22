@@ -58,8 +58,9 @@ extern crate bit_field;
 extern crate cpuio;
 extern crate linked_list_allocator;
 
-use features::get_cpu_freq;
+use features::{get_cpu_freq,msleep};
 use os_bootinfo::BootInfo;
+use vga_buffer::Color;
 
 //use memory::heap_allocator::BumpAllocator;
 
@@ -101,32 +102,14 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
         x86_64::instructions::interrupts::disable();
     }
     let freq = get_cpu_freq();
-
-    println!("freq: {}", freq);
-    println!("{}", function!());
     early_trace!();
-    early_trace!("TEST TRACE");
-    early_trace!();
+    early_trace!("System Info");
     early_trace!("Calculated CPU-frequency: {}", freq);
     early_trace!("Heap Size: {}", HEAP_SIZE);
 
-    // invoke a breakpoint exception
-    //x86_64::instructions::interrupts::int3();
-
-    //interrupts::trigger_test_interrupt();
     scheduler::sched_init(&mut memory_controller);
     interrupts::init_timer();
-    println!("after initialization of timer");
-
-    /*
-    let clock = features::clock::Clock::new(0,0);
-    clock.uptime();
-
-    let clock2 = features::clock::Clock::new(0,71);
-    clock2.uptime();
-    */
-
-    loop {}
+    loop {msleep(1000);}
 }
 
 pub const HEAP_START: usize = 0o_000_001_000_000_0000;
