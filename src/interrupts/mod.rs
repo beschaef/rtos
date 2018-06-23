@@ -1,10 +1,10 @@
-use x86_64;
 use cpuio;
 use features::keyboard;
 use memory::MemoryController;
 use pic::ChainedPics;
 use scheduler::schedule;
 use spin::{Mutex, Once};
+use x86_64;
 use x86_64::structures::idt::{ExceptionStackFrame, Idt, PageFaultErrorCode};
 use x86_64::structures::tss::TaskStateSegment;
 use x86_64::VirtualAddress;
@@ -324,7 +324,6 @@ extern "x86-interrupt" fn keyboard_handler(_stack_frame: &mut ExceptionStackFram
 
         x86_64::instructions::interrupts::enable();
     }
-
 }
 
 extern "x86-interrupt" fn handler_2(_stack_frame: &mut ExceptionStackFrame) {

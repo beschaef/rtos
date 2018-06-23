@@ -1,9 +1,9 @@
 pub mod clock;
 pub mod keyboard;
 
+use scheduler::RUNNING_TASK;
 use x86_64;
 use x86_64::instructions::rdtsc;
-use scheduler::RUNNING_TASK;
 
 static mut CPU_FREQ: usize = 0;
 

@@ -1,10 +1,10 @@
 use alloc::Vec;
 use memory::MemoryController;
-use spin::{Mutex};
+use spin::Mutex;
+use tasks::*;
 use x86_64;
 use x86_64::instructions::rdtsc;
-use x86_64::structures::idt::{ExceptionStackFrame};
-use tasks::*;
+use x86_64::structures::idt::ExceptionStackFrame;
 
 pub static mut RUNNING_TASK: Mutex<TaskData> = Mutex::new(TaskData {
     pid: 0,
@@ -109,7 +109,7 @@ pub fn schedule(f: &mut ExceptionStackFrame) {
         let x = TASKS.lock().pop().expect("popped");
         early_trace!("popped after sleep task {}", x.sleep_ticks);
         x
-    } else if unsafe{RUNNING_TASK.lock().status == TaskStatus::IDLE} {
+    } else if unsafe { RUNNING_TASK.lock().status == TaskStatus::IDLE } {
         //early_trace!("do nothing");
         return;
     } else {
@@ -141,11 +141,11 @@ pub fn schedule(f: &mut ExceptionStackFrame) {
                 sleep_ticks_c,
             );
             let mut position = 0;
-            if old.status == TaskStatus::IDLE{
+            if old.status == TaskStatus::IDLE {
                 TASKS.lock().insert(position, old);
             } else {
                 for task in TASKS.lock().iter() {
-                    if task.sleep_ticks <= sleep_ticks_c && task.status != TaskStatus::IDLE{
+                    if task.sleep_ticks <= sleep_ticks_c && task.status != TaskStatus::IDLE {
                         break;
                     }
                     position += 1;

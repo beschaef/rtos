@@ -8,7 +8,6 @@ pub struct Clock {
 }
 
 impl Clock {
-
     #[allow(dead_code)]
     pub fn new(row: u8, col: u8) -> Self {
         let color = Color::LightGreen;

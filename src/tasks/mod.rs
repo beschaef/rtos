@@ -9,8 +9,8 @@ use x86_64::VirtualAddress;
 
 static mut PID_COUNTER: usize = 0;
 
-const BOARD_WIDTH: u8 = 20;//20
-const BOARD_HEIGHT: u8 = 17;//17
+const BOARD_WIDTH: u8 = 20; //20
+const BOARD_HEIGHT: u8 = 17; //17
 const ROW_OFFSET: u8 = 2;
 const COL_OFFSET: u8 = 50;
 
@@ -160,7 +160,6 @@ impl Piece {
     }
 
     pub fn rotate(&mut self) {
-
         let size = self.shape.len();
 
         let mut new_piece = Piece {
@@ -184,13 +183,15 @@ impl Piece {
                 let t = new_piece.shape[row][col];
 
                 new_piece.shape[row][col] = new_piece.shape[col][size - row - 1];
-                new_piece.shape[col][size - row - 1] = new_piece.shape[size - row - 1][size - col - 1];
-                new_piece.shape[size - row - 1][size - col - 1] = new_piece.shape[size - col - 1][row];
+                new_piece.shape[col][size - row - 1] =
+                    new_piece.shape[size - row - 1][size - col - 1];
+                new_piece.shape[size - row - 1][size - col - 1] =
+                    new_piece.shape[size - col - 1][row];
                 new_piece.shape[size - col - 1][row] = t;
             }
         }
 
-        if !new_piece.collision_test(){
+        if !new_piece.collision_test() {
             self.oldx = self.posx;
             self.oldy = self.posy;
             self.oldshape = Vec::with_capacity(self.shape.len());
@@ -211,8 +212,6 @@ impl Piece {
 
             self.print_piece();
         }
-
-
     }
 
     pub fn collision_test(&mut self) -> bool {
@@ -254,7 +253,7 @@ impl Piece {
         if !self.move_piece(0, 1) {
             self.lock_piece();
             self.new_random_piece();
-            if self.collision_test(){
+            if self.collision_test() {
                 return false;
             }
             BOARD.lock().clear_lines();
@@ -271,7 +270,6 @@ impl Piece {
             }
         }
     }
-
 }
 
 pub struct Board {
@@ -309,11 +307,10 @@ impl Board {
     }
 
     pub fn clear_lines(&mut self) {
-
         for row_to_check in (0..BOARD_HEIGHT as usize).rev() {
             while !self.cells[row_to_check].iter().any(|x| *x == None) {
                 print!("!");
-                for row in (1..row_to_check+1).rev(){
+                for row in (1..row_to_check + 1).rev() {
                     self.cells[row] = self.cells[row - 1];
                     for col in 0..BOARD_WIDTH as usize {
                         if self.cells[row][col] != None {
@@ -335,7 +332,7 @@ impl Board {
                         }
                         vga_buffer::write_at_background(
                             " ",
-                            ROW_OFFSET + row as u8 -1,
+                            ROW_OFFSET + row as u8 - 1,
                             COL_OFFSET + col as u8,
                             Color::Black,
                             Color::Black,
