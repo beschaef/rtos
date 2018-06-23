@@ -102,14 +102,20 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
         x86_64::instructions::interrupts::disable();
     }
     let freq = get_cpu_freq();
-    early_trace!();
-    early_trace!("System Info");
-    early_trace!("Calculated CPU-frequency: {}", freq);
-    early_trace!("Heap Size: {}", HEAP_SIZE);
+    trace_fatal!();
+    trace_fatal!("System Info");
+    trace_fatal!("Calculated CPU-frequency: {}", freq);
+    trace_fatal!("Heap Size: {}", HEAP_SIZE);
+    trace_debug!();
+    trace_info!();
+    trace_warn!();
+    trace_error!();
 
     scheduler::sched_init(&mut memory_controller);
     interrupts::init_timer();
-    loop {msleep(1000);}
+    loop {
+        msleep(1000);
+    }
 }
 
 pub const HEAP_START: usize = 0o_000_001_000_000_0000;
