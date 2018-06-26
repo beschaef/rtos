@@ -127,7 +127,7 @@ macro_rules! trace_error {
     () => {
         use trace::*;
         if unsafe{TRACE_LEVEL} <= TraceLevel::Error {
-            (simple_trace!("Fatal",""))
+            (simple_trace!("Error",""))
         }
     };
     ($fmt:expr) => {
