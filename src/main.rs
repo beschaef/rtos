@@ -108,6 +108,9 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
     trace_fatal!("Heap Size: {}", HEAP_SIZE);
     trace_debug!();
     trace_info!();
+    trace_info!();
+    set_trace_level!(TraceLevel::Warn);
+    trace_info!();
     trace_warn!();
     trace_error!();
 

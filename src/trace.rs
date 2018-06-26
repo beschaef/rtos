@@ -2,6 +2,7 @@ use cpuio::UnsafePort;
 use spin::Mutex;
 use x86_64;
 use x86_64::instructions::rdtsc;
+use core::any::Any;
 
 struct Trace {
     //port: cpuio::UnsafePort,
@@ -19,7 +20,7 @@ pub enum TraceLevel {
     None = 5,
 }
 
-pub static mut TRACE_LEVEL: TraceLevel = TraceLevel::Warn;
+pub static mut TRACE_LEVEL: TraceLevel = TraceLevel::Info;
 
 lazy_static! {
     static ref TRACE: Mutex<Trace> = Mutex::new(Trace {});
@@ -173,6 +174,15 @@ macro_rules! early_trace {
     ($fmt:expr) => ($crate::trace::trace_info_without_interrupts("",function!(),&format!($fmt)));
     ($fmt:expr, $($arg:tt)*) => ($crate::trace::trace_info_without_interrupts("",function!(),&format!($fmt, $($arg)*)));
 
+}
+
+macro_rules! set_trace_level {
+    ($e:expr) => {
+        use core::any::Any;
+        if let Some(f) = (&$e as &Any).downcast_ref::<TraceLevel>() {
+            unsafe{TRACE_LEVEL = *f;}
+        }
+    };
 }
 
 macro_rules! function {
