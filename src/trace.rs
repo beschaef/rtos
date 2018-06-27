@@ -3,10 +3,15 @@ use spin::Mutex;
 use x86_64;
 use x86_64::instructions::rdtsc;
 
+/// the serial port to write is fix, so there is no need to store any data in the struct.
 struct Trace {
     //port: cpuio::UnsafePort,
 }
 
+/// Same Level as the ROS (Robot Operating System) Log level.
+/// Debug to Fatal are used to Trace different Types.
+/// If Trace Level is set to None no Traces are written.
+/// The smaller the Tracelevel is the more Infos are traced.
 #[allow(dead_code)]
 #[derive(Debug, PartialEq, PartialOrd, Clone, Copy)]
 #[repr(u8)]
@@ -19,13 +24,23 @@ pub enum TraceLevel {
     None = 5,
 }
 
+/// Global Variable to store the actual Trace level.
 pub static mut TRACE_LEVEL: TraceLevel = TraceLevel::Info;
 
 lazy_static! {
+    /// Global Trace struct, saved with a Mutex, to use it in all Files.
     static ref TRACE: Mutex<Trace> = Mutex::new(Trace {});
 }
 
 impl Trace {
+    /// # Output example
+    ///
+    /// Info: module:function_name - tsc: 1234567890 - Some additional info text
+    ///
+    /// # Arguments
+    /// * `level` - writes trace level ('Info' in example).
+    /// * `fn_name` - writes function name ('module:function_name' in example)
+    /// * `info_text` - writes additional info ('Some additional info text' in example).
     pub fn write(&mut self, level: &str, fn_name: &str, info_text: &str) {
         let ts = rdtsc();
         for x in format!(
