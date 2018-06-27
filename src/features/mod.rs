@@ -75,12 +75,12 @@ pub fn get_cpu_freq() -> u64 {
 }
 
 pub fn msleep(ms: u64) {
-    trace!();
+    trace_info!();
     let one_sec = get_cpu_freq();
 
     let time = one_sec * (ms / 1000); // (one_sec * ms / 1000) as i64; doesnt work!
     let tsc = time + rdtsc();
-    trace!("sleep until: {}", tsc);
+    trace_debug!("sleep until: {}", tsc);
     unsafe {
         {
             RUNNING_TASK.lock().sleep_ticks = tsc as usize;

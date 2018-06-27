@@ -71,6 +71,7 @@ macro_rules! trace_debug {
         }
     };
     ($fmt:expr) => {
+        use trace::*;
         if unsafe{TRACE_LEVEL} <= TraceLevel::Debug {
             (simple_trace!("Debug",$fmt))
         }
@@ -91,6 +92,7 @@ macro_rules! trace_info {
         }
     };
     ($fmt:expr) => {
+        use trace::*;
         if unsafe{TRACE_LEVEL} <= TraceLevel::Info {
             (simple_trace!("Info",$fmt))
         }
