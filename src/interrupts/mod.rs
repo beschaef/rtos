@@ -315,7 +315,7 @@ extern "x86-interrupt" fn keyboard_handler(_stack_frame: &mut ExceptionStackFram
     }
     unsafe {
         {
-            let mut locked = PICS.try_lock();
+            let locked = PICS.try_lock();
             if locked.is_some() {
                 let mut unwrapped = locked.expect("vga_buffer write_at failed");
                 unwrapped.notify_end_of_interrupt(0x21 as u8);
