@@ -2,7 +2,6 @@ use cpuio::UnsafePort;
 use spin::Mutex;
 use x86_64;
 use x86_64::instructions::rdtsc;
-use core::any::Any;
 
 struct Trace {
     //port: cpuio::UnsafePort,
@@ -57,6 +56,7 @@ pub fn trace_info_without_interrupts(level: &str, fn_name: &str, info_text: &str
     }
 }
 
+#[allow(dead_code)]
 macro_rules! trace {
     () => (simple_trace!("",""));
     ($fmt:expr) =>           (simple_trace!("",$fmt));
@@ -171,6 +171,7 @@ macro_rules! simple_trace {
 
 /// This Trace isn't disabling the Interrupts while writing.
 /// Only use in Interruptroutine's or before enabling Interrupts.
+#[allow(dead_code)]
 macro_rules! early_trace {
     () => ($crate::trace::trace_info_without_interrupts("",function!(),&format!("")));
     ($fmt:expr) => ($crate::trace::trace_info_without_interrupts("",function!(),&format!($fmt)));
