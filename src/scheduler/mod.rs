@@ -91,7 +91,7 @@ pub fn sched_init(memory_controller: &mut MemoryController) {
         ),
     );
 
-    early_trace!("initialised scheduler");
+    trace_info!("initialised scheduler");
 }
 
 pub fn schedule(f: &mut ExceptionStackFrame) {
@@ -102,18 +102,18 @@ pub fn schedule(f: &mut ExceptionStackFrame) {
     // check if a task is ready to run
     let tsc = rdtsc();
     let to_run = if TASKS.lock().last().expect("last").status == TaskStatus::READY {
-        early_trace!("popped ready task");
+        trace_debug!("popped ready task");
         let x = TASKS.lock().pop().expect("popped");
         x
     } else if TASKS.lock().last().expect("tadaa").sleep_ticks < tsc as usize {
         let x = TASKS.lock().pop().expect("popped");
-        early_trace!("popped after sleep task {}", x.sleep_ticks);
+        trace_debug!("popped after sleep task {}", x.sleep_ticks);
         x
     } else if unsafe { RUNNING_TASK.lock().status == TaskStatus::IDLE } {
         //early_trace!("do nothing");
         return;
     } else {
-        early_trace!("popped idle");
+        trace_debug!("popped idle");
         let x = TASKS.lock().remove(0);
         x
     };

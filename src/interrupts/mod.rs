@@ -100,7 +100,7 @@ pub fn init(memory_controller: &mut MemoryController) {
 
 pub fn init_timer() {
     unsafe {
-        early_trace!("init_timer");
+        trace_info!("init_timer");
         asm!("
            cli
            mov  al,34h

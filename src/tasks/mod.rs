@@ -401,7 +401,7 @@ impl TaskData {
 
 pub fn uptime1() {
     msleep(1000);
-    early_trace!();
+    trace_info!();
 
     let mut r = 0;
     loop {
@@ -414,14 +414,14 @@ pub fn uptime1() {
             r % (60)
         );
         vga_buffer::write_at_background(text, 0, 0, color, Color::Black);
-        early_trace!("Uptime1 written {:?}", text);
+        trace_debug!("Uptime1 written {:?}", text);
         msleep(1000);
     }
 }
 
 pub fn uptime2() {
     msleep(1000);
-    early_trace!();
+    trace_info!();
     let mut r = 0;
     loop {
         //trace!("loop uptime1");
@@ -435,14 +435,14 @@ pub fn uptime2() {
             r % (60)
         );
         vga_buffer::write_at_background(text, 2, 0, color, Color::Black);
-        early_trace!("Uptime2 written {:?}", text);
+        trace_debug!("Uptime2 written {:?}", text);
         msleep(1000);
     }
 }
 
 pub fn uptime3() {
     msleep(1000);
-    early_trace!();
+    trace_info!();
     let mut r = 0;
     loop {
         //trace!("loop uptime1");
@@ -456,14 +456,14 @@ pub fn uptime3() {
             r % (60)
         );
         vga_buffer::write_at_background(text, 4, 0, color, Color::Black);
-        early_trace!("Uptime3 written {:?}", text);
+        trace_debug!("Uptime3 written {:?}", text);
         msleep(1000);
     }
 }
 
 pub fn uptime4() {
     msleep(1000);
-    early_trace!();
+    trace_info!();
     let mut r = 0;
     loop {
         //trace!("loop uptime1");
@@ -477,7 +477,7 @@ pub fn uptime4() {
             r % (60)
         );
         vga_buffer::write_at_background(text, 6, 0, color, Color::Black);
-        early_trace!("Uptime4 written {:?}", text);
+        trace_debug!("Uptime4 written {:?}", text);
         msleep(1000);
     }
 }
@@ -485,7 +485,7 @@ pub fn uptime4() {
 #[allow(dead_code)]
 pub fn uptime5() {
     msleep(2000);
-    early_trace!();
+    trace_info!();
     let mut r = 0;
     loop {
         //trace!("loop uptime1");
@@ -499,14 +499,14 @@ pub fn uptime5() {
             r % (60)
         );
         vga_buffer::write_at_background(text, 8, 0, color, Color::Black);
-        early_trace!("Uptime5 written {:?}", text);
+        trace_debug!("Uptime5 written {:?}", text);
         msleep(5000);
     }
 }
 
 pub fn uptime_temp() {
     msleep(1000);
-    early_trace!();
+    trace_info!();
     let mut r = 0;
     for _i in 0..3 {
         //trace!("loop uptime1");
@@ -520,7 +520,7 @@ pub fn uptime_temp() {
             r % (60)
         );
         vga_buffer::write_at_background(text, 10, 0, color, Color::Black);
-        early_trace!("Uptime_temp written {:?}", text);
+        trace_debug!("Uptime_temp written {:?}", text);
         msleep(1000);
     }
     finish_task();
@@ -528,7 +528,7 @@ pub fn uptime_temp() {
 
 pub fn tetris() {
     msleep(1000);
-    early_trace!();
+    trace_info!();
     let mut gameover = false;
     PIECE.lock().new_random_piece();
     BOARD.lock().render_board();
@@ -546,7 +546,7 @@ pub fn tetris() {
 }
 
 pub fn idle_task() {
-    early_trace!("IDLE");
+    trace_info!("IDLE");
     loop {
         unsafe {
             asm!("pause":::: "intel", "volatile");
@@ -562,7 +562,7 @@ fn increment_pid() -> usize {
 }
 
 fn finish_task() {
-    early_trace!("TASK FINISHED");
+    trace_info!("TASK FINISHED");
     unsafe {
         RUNNING_TASK.lock().status = TaskStatus::FINISHED;
         int!(0x20);
