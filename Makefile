@@ -29,10 +29,5 @@ gdb:
 	@rust-os-gdb/bin/rust-gdb "target/x86_64-rtos/debug/rtos" -ex "target remote :1234"
 
 doc:
-	cargo rustdoc -- \
-    --no-defaults \
-    --passes strip-hidden \
-    --passes collapse-docs \
-    --passes unindent-comments \
-    --passes strip-priv-imports
+	cargo rustdoc -- --document-private-items
 	cargo rustdoc --open
