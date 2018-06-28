@@ -29,5 +29,6 @@ gdb:
 	@rust-os-gdb/bin/rust-gdb "target/x86_64-rtos/debug/rtos" -ex "target remote :1234"
 
 doc:
+	rm -rf target/doc/
 	cargo rustdoc -- --document-private-items
 	cargo rustdoc --open
