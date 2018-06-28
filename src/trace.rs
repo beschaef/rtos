@@ -1,3 +1,9 @@
+//! This module is used to trace informations. All data is written to port `0x03f8`.
+//! It's possible to trace five different level of tracing. `Debug`, `Info`, `Warn`, `Error`,
+//! `Fatal`, and `None`.
+//! If the Trace level is set to `None`, nothing is traced.
+//! For easier usage there are different macros for each trace level.
+//! There is also a macro to change the trace level while the system is running.
 use cpuio::UnsafePort;
 use spin::Mutex;
 use x86_64;
@@ -28,11 +34,14 @@ pub enum TraceLevel {
 pub static mut TRACE_LEVEL: TraceLevel = TraceLevel::Info;
 
 lazy_static! {
-    /// Global Trace struct, saved with a Mutex, to use it in all Files.
+    /// Global Trace struct, saved with a Mutex, to use it in all Files and to
+    /// pretend race conditions or similar multi access problems.
     static ref TRACE: Mutex<Trace> = Mutex::new(Trace {});
 }
 
 impl Trace {
+    /// This function builds a string with the arguments and writes then all bytes on Port `0x03f8`.
+    ///
     /// # Output example
     ///
     /// Info: module:function_name - tsc: 1234567890 - Some additional info text
@@ -55,6 +64,12 @@ impl Trace {
     }
 }
 
+/// writes a trace with disabled interrupts.
+///
+/// # Arguments
+/// * `level` - writes trace level ('Info' in example).
+/// * `fn_name` - writes function name ('module:function_name' in example)
+/// * `info_text` - writes additional info ('Some additional info text' in example).
 pub fn trace_info(level: &str, fn_name: &str, info_text: &str) {
     unsafe {
         x86_64::instructions::interrupts::disable();
@@ -63,6 +78,12 @@ pub fn trace_info(level: &str, fn_name: &str, info_text: &str) {
     }
 }
 
+/// writes a trace with given arguments.
+///
+/// # Arguments
+/// * `level` - writes trace level ('Info' in example).
+/// * `fn_name` - writes function name ('module:function_name' in example)
+/// * `info_text` - writes additional info ('Some additional info text' in example).
 pub fn trace_info_without_interrupts(level: &str, fn_name: &str, info_text: &str) {
     let lock = TRACE.try_lock();
     if lock.is_some() {
@@ -71,13 +92,20 @@ pub fn trace_info_without_interrupts(level: &str, fn_name: &str, info_text: &str
     }
 }
 
-#[allow(dead_code)]
-macro_rules! trace {
-    () => (simple_trace!("",""));
-    ($fmt:expr) =>           (simple_trace!("",$fmt));
-    ($fmt:expr, $($arg:tt)*) => (simple_trace!("",$fmt, $($arg)*));
-}
-
+/// traces a given message when trace level is set to `Debug`
+///
+/// # Output example
+///
+/// Debug: module:function_name - tsc: 1234567890 - Some debug info
+///
+/// # Examples
+/// trace_fatal!();
+///
+/// trace_fatal!("Some debug info");
+///
+/// trace_fatal!("Some {} info", "debug");
+///
+#[macro_export]
 macro_rules! trace_debug {
     () => {
         use trace::*;
@@ -99,6 +127,20 @@ macro_rules! trace_debug {
     };
 }
 
+/// traces a given message when trace level is set to `Info` or `Debug`
+///
+/// # Output example
+///
+/// Info: module:function_name - tsc: 1234567890 - Awesome stuff is happend
+///
+/// # Examples
+/// trace_fatal!();
+///
+/// trace_fatal!("Awesome stuff is happend");
+///
+/// trace_fatal!("Awesome stuff is {}", "happend");
+///
+#[macro_export]
 macro_rules! trace_info {
     () => {
         use trace::*;
@@ -120,6 +162,20 @@ macro_rules! trace_info {
     };
 }
 
+/// traces a given message when trace level is set to `Warn`, `Info` or `Debug`
+///
+/// # Output example
+///
+/// Warn: module:function_name - tsc: 1234567890 - Something happend
+///
+/// # Examples
+/// trace_fatal!();
+///
+/// trace_fatal!("Something happend");
+///
+/// trace_fatal!("Something {}", "happend");
+///
+#[macro_export]
 macro_rules! trace_warn {
     () => {
         use trace::*;
@@ -140,6 +196,20 @@ macro_rules! trace_warn {
     };
 }
 
+/// traces a given message when trace level is set to `Error`, `Warn`, `Info` or `Debug`
+///
+/// # Output example
+///
+/// Error: module:function_name - tsc: 1234567890 - Something bad happend
+///
+/// # Examples
+/// trace_fatal!();
+///
+/// trace_fatal!("Something bad happend");
+///
+/// trace_fatal!("Something {} happend", "bad");
+///
+#[macro_export]
 macro_rules! trace_error {
     () => {
         use trace::*;
@@ -160,6 +230,20 @@ macro_rules! trace_error {
     };
 }
 
+/// traces a given message when trace level is set to `Fatal`, `Error`, `Warn`, `Info` or `Debug`
+///
+/// # Output example
+///
+/// Fatal: module:function_name - tsc: 1234567890 - Something really bad happend
+///
+/// # Examples
+/// trace_fatal!();
+///
+/// trace_fatal!("Something really bad happend");
+///
+/// trace_fatal!("Something really {} happend", "bad");
+///
+#[macro_export]
 macro_rules! trace_fatal {
     () => {
         use trace::*;
@@ -180,13 +264,26 @@ macro_rules! trace_fatal {
     };
 }
 
+/// traces a given message by using the trace::trace_info() function
+///
+/// # Examples
+/// simple_trace!("Debug", "Some info Text");
+#[macro_export]
 macro_rules! simple_trace {
     ($a:expr, $($arg:tt)*) => ($crate::trace::trace_info(&format!($a), function!(),&format!($($arg)*)));
 }
 
-/// This Trace isn't disabling the Interrupts while writing.
-/// Only use in Interruptroutine's or before enabling Interrupts.
+/// traces a given message by using the trace::trace_info_without_interrupts() function
+///
+/// # Examples
+/// early_trace!();
+///
+/// early_trace!("Some info Text");
+///
+/// early_trace!("Some info {}", "Text");
+///
 #[allow(dead_code)]
+#[macro_export]
 macro_rules! early_trace {
     () => ($crate::trace::trace_info_without_interrupts("",function!(),&format!("")));
     ($fmt:expr) => ($crate::trace::trace_info_without_interrupts("",function!(),&format!($fmt)));
@@ -194,6 +291,13 @@ macro_rules! early_trace {
 
 }
 
+/// changes the trace level
+///
+/// # Examples
+/// set_trace_level!(TraceLevel::Warn);
+///
+/// set_trace_level!(TraceLevel::None);
+#[macro_export]
 macro_rules! set_trace_level {
     ($e:expr) => {
         use core::any::Any;
@@ -203,6 +307,20 @@ macro_rules! set_trace_level {
     };
 }
 
+/// returns the function and module from where it's called.
+///
+/// # Examples
+/// mod foo {
+///
+///     def bar() {
+///
+///         function!() # will return foo:bar
+///
+///     }
+///
+/// }
+///
+#[macro_export]
 macro_rules! function {
     () => {{
         fn f() {}
