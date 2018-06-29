@@ -83,7 +83,9 @@ pub fn msleep(ms: u64) {
     trace_debug!("sleep until: {}", tsc);
     unsafe {
         {
+            x86_64::instructions::interrupts::disable();
             RUNNING_TASK.lock().sleep_ticks = tsc as usize;
+            x86_64::instructions::interrupts::enable();
         }
         int!(0x20);
     }
