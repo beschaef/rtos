@@ -109,20 +109,33 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
     trace_debug!();
     trace_info!();
     trace_info!();
-    set_trace_level!(TraceLevel::Warn);
+    set_trace_level!(TraceLevel::Debug);
     trace_info!();
     trace_warn!();
     trace_error!();
 
     scheduler::sched_init(&mut memory_controller);
     interrupts::init_timer();
+    msleep(1000);
     loop {
-        msleep(1000);
+        msleep(200);
+        if let Some(f) = tasks::NEW_TASKS.lock().pop() {
+            trace_warn!("added new task");
+            let memory = memory_controller
+                .alloc_stack(2)
+                .expect("can't allocate stack");
+            scheduler::TASKS.lock().push(tasks::TaskData::new(
+                0,
+                x86_64::VirtualAddress(memory.top()),
+                f,
+                tasks::TaskStatus::READY,
+            ));
+        }
     }
 }
 
 pub const HEAP_START: usize = 0o_000_001_000_000_0000;
-pub const HEAP_SIZE: usize = 100 * 1024; // 100 KiB
+pub const HEAP_SIZE: usize = 200 * 1024; // 100 KiB
                                          //
                                          //#[global_allocator]
                                          //static HEAP_ALLOCATOR: BumpAllocator = BumpAllocator::new(HEAP_START, HEAP_START + HEAP_SIZE);

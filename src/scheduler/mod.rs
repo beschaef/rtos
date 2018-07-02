@@ -16,7 +16,7 @@ pub static mut RUNNING_TASK: Mutex<TaskData> = Mutex::new(TaskData {
 });
 
 lazy_static! {
-    static ref TASKS: Mutex<Vec<TaskData>> = Mutex::new(vec![]);
+    pub static ref TASKS: Mutex<Vec<TaskData>> = Mutex::new(vec![]);
 }
 
 pub fn sched_init(memory_controller: &mut MemoryController) {
@@ -66,7 +66,7 @@ pub fn sched_init(memory_controller: &mut MemoryController) {
         TaskData::new(
             0,
             x86_64::VirtualAddress(memory.top()),
-            x86_64::VirtualAddress(uptime_temp as usize),
+            x86_64::VirtualAddress(task_keyboard as usize),
             TaskStatus::READY,
         ),
     );
@@ -86,6 +86,16 @@ pub fn sched_init(memory_controller: &mut MemoryController) {
         TaskData::new(
             0,
             x86_64::VirtualAddress(memory.top()),
+            x86_64::VirtualAddress(add_new_temp_clocks as usize),
+            TaskStatus::READY,
+        ),
+    );
+    let memory = memory_controller.alloc_stack(2).expect("Ooopsie");
+    TASKS.lock().insert(
+        0,
+        TaskData::new(
+            0,
+            x86_64::VirtualAddress(memory.top()),
             x86_64::VirtualAddress(idle_task as usize),
             TaskStatus::IDLE,
         ),
@@ -93,7 +103,6 @@ pub fn sched_init(memory_controller: &mut MemoryController) {
 
     trace_info!("initialised scheduler");
 }
-
 pub fn schedule(f: &mut ExceptionStackFrame) {
     //early_trace!();
     let cpuflags = f.cpu_flags;
