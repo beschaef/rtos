@@ -294,7 +294,7 @@ extern "x86-interrupt" fn timer_handler(stack_frame: &mut ExceptionStackFrame) {
             while locked.is_none() {
                 locked = PICS.try_lock();
             }
-            let mut unwrapped = locked.expect("vga_buffer write_at failed");
+            let mut unwrapped = locked.expect("scheduler failed");
             unwrapped.notify_end_of_interrupt(0x20 as u8);
         }
         x86_64::instructions::interrupts::enable();
@@ -303,26 +303,29 @@ extern "x86-interrupt" fn timer_handler(stack_frame: &mut ExceptionStackFrame) {
 
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 extern "x86-interrupt" fn keyboard_handler(_stack_frame: &mut ExceptionStackFrame) {
+    //    unsafe {
+    //        x86_64::instructions::interrupts::disable();
+    //        let scancode: u8 = cpuio::UnsafePort::new(0x60).read();
+    //        if let Some(c) = keyboard::from_scancode(scancode as usize) {
+    //            print!("{:?}", c);
+    //            if c == 'h' {
+    //                loop {}
+    //            }
+    //        }
+    //    }
+    //    unsafe {
+    //        {
+    //            let locked = PICS.try_lock();
+    //            if locked.is_some() {
+    //                let mut unwrapped = locked.expect("keyboard_handler failed");
+    //                unwrapped.notify_end_of_interrupt(0x21 as u8);
+    //            }
+    //        }
+    //
+    //        x86_64::instructions::interrupts::enable();
+    //    }
     unsafe {
-        x86_64::instructions::interrupts::disable();
-        let scancode: u8 = cpuio::UnsafePort::new(0x60).read();
-        if let Some(c) = keyboard::from_scancode(scancode as usize) {
-            print!("{:?}", c);
-            if c == 'h' {
-                loop {}
-            }
-        }
-    }
-    unsafe {
-        {
-            let locked = PICS.try_lock();
-            if locked.is_some() {
-                let mut unwrapped = locked.expect("vga_buffer write_at failed");
-                unwrapped.notify_end_of_interrupt(0x21 as u8);
-            }
-        }
-
-        x86_64::instructions::interrupts::enable();
+        //PICS.lock().notify_end_of_interrupt(0x21 as u8);
     }
 }
 

@@ -1,4 +1,5 @@
 use alloc::Vec;
+use features::keyboard;
 use features::msleep;
 use scheduler::RUNNING_TASK;
 use spin::Mutex;
@@ -39,6 +40,7 @@ lazy_static! {
     pub static ref BOARD: Mutex<Board> = Mutex::new(Board {
         cells: [[None; BOARD_WIDTH as usize]; BOARD_HEIGHT as usize],
     });
+    pub static ref NEW_TASKS: Mutex<Vec<VirtualAddress>> = Mutex::new(vec![]);
 }
 
 
@@ -556,25 +558,17 @@ pub fn uptime4() {
     }
 }
 
-#[allow(dead_code)]
-pub fn uptime5() {
+pub fn add_new_temp_clocks() {
     msleep(2000);
     trace_info!();
     let mut r = 0;
     loop {
-        //trace!("loop uptime1");
-
-        r = r + 1;
-        let color = Color::LightGreen;
-        let text = &format!(
-            "{:2}:{:2}:{:2}",
-            (r / (60 * 60)) % 24,
-            (r / (60)) % 60,
-            r % (60)
-        );
-        vga_buffer::write_at_background(text, 8, 0, color, Color::Black);
-        trace_debug!("Uptime5 written {:?}", text);
-        msleep(5000);
+        msleep(1000);
+        NEW_TASKS
+            .lock()
+            .insert(0, VirtualAddress(uptime_temp as usize));
+        msleep(10000);
+        trace_debug!("Added new temp task");
     }
 }
 
@@ -582,7 +576,7 @@ pub fn uptime_temp() {
     msleep(1000);
     trace_info!();
     let mut r = 0;
-    for _i in 0..3 {
+    for _i in 0..4 {
         //trace!("loop uptime1");
 
         r = r + 1;
@@ -625,6 +619,33 @@ pub fn tetris() {
     }
     // end the task
     finish_task();
+}
+
+
+/// moved keyboard handler from interrupts to own function
+/// keyboard handler as interrupt causes to PIC's deadlock problems.
+/// for now the function polls every 50ms.
+///
+/// https://wiki.osdev.org/PS/2_Keyboard
+///
+/// if port `0x64` is 1 there is user input and the function reads on port `0x60` the scancode
+use x86_64::instructions::port;
+pub fn task_keyboard() {
+    msleep(1000);
+    unsafe {
+        loop {
+            while port::inb(0x64) & 0x1 == 1 {
+                let scan_code = port::inb(0x60);
+                if let Some(c) = keyboard::from_scancode(scan_code as usize) {
+                    //print!("{:?}", c);
+                    if c == 'h' {
+                        loop {}
+                    }
+                }
+            }
+            msleep(50);
+        }
+    }
 }
 
 pub fn idle_task() {
