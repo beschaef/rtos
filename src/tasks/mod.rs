@@ -10,7 +10,6 @@ use x86_64::VirtualAddress;
 
 static mut PID_COUNTER: usize = 0;
 
-
 /// set the size of the playing field
 const BOARD_WIDTH: u8 = 20; //20
 const BOARD_HEIGHT: u8 = 17; //17
@@ -18,7 +17,6 @@ const BOARD_HEIGHT: u8 = 17; //17
 /// set the position of the playing field (distance to left/top corner)
 const ROW_OFFSET: u8 = 2;
 const COL_OFFSET: u8 = 50;
-
 
 lazy_static! {
 /// the actual falling piece
@@ -42,7 +40,6 @@ lazy_static! {
     });
     pub static ref NEW_TASKS: Mutex<Vec<VirtualAddress>> = Mutex::new(vec![]);
 }
-
 
 pub struct Piece {
     ///the Color of the specific piece
@@ -123,7 +120,6 @@ impl Piece {
             _ => println!("error creating new random piece"),
         }
     }
-
 
     /// prints the current piece
     pub fn print_piece(&mut self) {
@@ -263,7 +259,6 @@ impl Piece {
         }
     }
 
-
     /// Check if the piece would crash against the boarders of the playing field or against an occupied cell.
     ///
     /// # Return
@@ -349,7 +344,6 @@ pub struct Board {
 }
 
 impl Board {
-
     ///prints the boarders of the playing field
     pub fn render_board(&self) {
         for y in 0..BOARD_HEIGHT {
@@ -620,7 +614,6 @@ pub fn tetris() {
     // end the task
     finish_task();
 }
-
 
 /// moved keyboard handler from interrupts to own function
 /// keyboard handler as interrupt causes to PIC's deadlock problems.
