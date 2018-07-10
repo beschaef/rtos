@@ -68,7 +68,7 @@ pub fn get_cpu_freq() -> u64 {
         if CPU_FREQ == 0 {
             //calc_freq();
             //CPU_FREQ = calc_freq();
-            CPU_FREQ = 1_600_000_000
+            CPU_FREQ = 2_700_000_000
         }
         CPU_FREQ as u64
     }
