@@ -19,7 +19,7 @@ fmt:
 	cargo fmt
 
 run:
-	@qemu-system-x86_64 -drive format=raw,file=bootimage.bin -m 1024M -enable-kvm -serial file:logs/TRACE_$(TIME)
+	@qemu-system-x86_64 -drive format=raw,file=bootimage.bin -cpu host,check -m 1024M -enable-kvm -serial file:logs/TRACE_$(TIME)
 
 debug:
 	@qemu-system-x86_64 -drive format=raw,file=bootimage.bin -s -S -m 1024M -enable-kvm -serial file:logs/TRACE_$(TIME)

@@ -46,6 +46,7 @@ extern crate os_bootinfo;
 extern crate spin;
 #[macro_use]
 extern crate bitflags;
+#[macro_use]
 extern crate raw_cpuid;
 #[macro_use]
 extern crate x86_64;
@@ -102,7 +103,11 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
         x86_64::instructions::interrupts::disable();
     }
     let freq = get_cpu_freq();
+    let cpuidss = raw_cpuid::CpuId::new();
+    vga_buffer::write_at_background(&format!("{}",freq), 22, 0, Color::Magenta, Color::Black);
     trace_fatal!();
+    trace_fatal!("CPU INFO {:?}", cpuid!(0x16));
+    trace_fatal!("CPU INFO {:?}", cpuid!(0x16,0));
     trace_fatal!("System Info");
     trace_fatal!("Calculated CPU-frequency: {}", freq);
     trace_fatal!("Heap Size: {}", HEAP_SIZE);
