@@ -144,9 +144,7 @@ fn read_pit() -> u64 {
 pub fn get_cpu_freq() -> u64 {
     unsafe {
         if CPU_FREQ == 0 {
-            trace_fatal!("freq {:?}", calc_freq());
             CPU_FREQ = calc_freq();
-            //CPU_FREQ = 1_600_000_000
         }
         CPU_FREQ as u64
     }
