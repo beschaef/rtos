@@ -93,58 +93,21 @@ pub fn calc_freq() -> u64 {
     }
 
     for i in 0..5 {
-        unsafe {
-            asm!("and rax, 0
-                     mov     al,0h
-                     out     43h,al
-                     in      al,40h
-                     mov     ah,al
-                     in      al,40h
-                     rol     ax,8
-
-                     push rax
-                     pop $0
-                     ":"=r"(t0)::"rax":"intel","volatile");
-        }
-        //t0 = ((hi * 256) + lo);
+        t0 = read_pit();
         t1 = t0;
         trace_fatal!("t0 {:?}", t0);
         while (t0 - t1) < 20 {
+            t1 = read_pit();
             unsafe {
-                asm!("and rax, 0
-                         mov     al,0h
-                         out     43h,al
-                         in      al,40h
-                         mov     ah,al
-                         in      al,40h
-                         rol     ax,8
-
-                         push rax
-                         pop $0
-                     ":"=r"(t1)::"rax":"intel","volatile");
-                //t1 = ((hi * 256) + lo);
                 trace_fatal!("t1 {:?}", t1);
-
-
                 r1 = x86_64::instructions::rdtsc();
             }
         }
         t0 = t1;
         while (t0 - t1) < 40 {
+            t1 = read_pit();
+            trace_fatal!("t1 {:?}", t1);
             unsafe {
-                asm!("and rax, 0
-                     mov     al,0h
-                     out     43h,al
-                     in      al,40h
-                     mov     ah,al
-                     in      al,40h
-                     rol     ax,8
-
-                     push rax
-                     pop $0
-                     ":"=r"(t1)::"rax":"intel","volatile");
-                trace_fatal!("t1 {:?}", t1);
-
                 r2 = x86_64::instructions::rdtsc();
             }
         }
@@ -159,6 +122,23 @@ pub fn calc_freq() -> u64 {
 
     return (r0 / f0 * pit_freq) as u64;
 
+}
+
+fn read_pit() -> u64 {
+    let mut reg: u64 = 0;
+    unsafe {
+        asm!("   and rax, 0
+                 mov     al,0h
+                 out     43h,al
+                 in      al,40h
+                 mov     ah,al
+                 in      al,40h
+                 rol     ax,8
+
+                 push rax
+                 pop $0
+                 ":"=r"(reg)::"rax":"intel","volatile");}
+    return reg;
 }
 
 pub fn get_cpu_freq() -> u64 {
