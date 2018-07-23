@@ -19,14 +19,14 @@ pub fn calc_freq() -> u64 {
     unsafe {
         x86_64::instructions::interrupts::disable();
     }
-    let mut r0 :u64 = 0;
-    let mut f0 :u64 = 0;
-    let mut r1 :u64 = 0;
-    let mut r2 :u64 = 0;
-    let mut t0 :u64 = 0;
-    let mut t1 :u64 = 0;
-    let mut hi :u64 = 0;
-    let mut lo :u64 = 0;
+    let mut r0: u64 = 0;
+    let mut f0: u64 = 0;
+    let mut r1: u64 = 0;
+    let mut r2: u64 = 0;
+    let mut t0: u64 = 0;
+    let mut t1: u64 = 0;
+    let mut hi: u64 = 0;
+    let mut lo: u64 = 0;
     let mut ticks: u64 = 0;
     let pit_freq = 1193182;
 
@@ -73,7 +73,6 @@ pub fn calc_freq() -> u64 {
     trace_fatal!("freq {:?}", (r0 / f0 * pit_freq));
 
     return (r0 / f0 * pit_freq) as u64;
-
 }
 
 /// Currently there is no `rust-way` to get the remaining pit-ticks. Therefore the function use
@@ -91,7 +90,8 @@ fn read_pit() -> u64 {
 
                  push rax
                  pop $0
-                 ":"=r"(reg)::"rax":"intel","volatile");}
+                 ":"=r"(reg)::"rax":"intel","volatile");
+    }
     return reg;
 }
 

@@ -61,8 +61,8 @@ extern crate linked_list_allocator;
 
 use features::{get_cpu_freq, msleep};
 use os_bootinfo::BootInfo;
-use vga_buffer::Color;
 use raw_cpuid::CpuId;
+use vga_buffer::Color;
 
 //use memory::heap_allocator::BumpAllocator;
 
@@ -110,25 +110,13 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
     //vga_buffer::write_at_background(cpuid.max_eax_value, 19,2, Color::Blue, Color::Red);
 
     if let Some(info) = cpuid.get_vendor_info() {
-       vga_buffer::write_at_background(
-            info.as_string(),
-            20,
-            2,
-            Color::Blue,
-            Color::Red,
-        );
+        vga_buffer::write_at_background(info.as_string(), 20, 2, Color::Blue, Color::Red);
         trace_fatal!("Vendor: {}\n", info.as_string());
     }
 
     if let Some(info) = cpuid.get_extended_function_info() {
         if let Some(brand) = info.processor_brand_string() {
-            vga_buffer::write_at_background(
-                brand,
-                21,
-                2,
-                Color::Blue,
-                Color::Red,
-            );
+            vga_buffer::write_at_background(brand, 21, 2, Color::Blue, Color::Red);
             trace_fatal!("Model: {}\n", brand);
         }
     }
@@ -155,13 +143,7 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
             Color::Red,
         );
     } else {
-        vga_buffer::write_at_background(
-            "Can't get cpu freq info!",
-            23,
-            2,
-            Color::Blue,
-            Color::Red,
-        );
+        vga_buffer::write_at_background("Can't get cpu freq info!", 23, 2, Color::Blue, Color::Red);
     }
 
     //msleep(10000);
