@@ -10,17 +10,19 @@ use x86_64::VirtualAddress;
 static mut PID_COUNTER: usize = 0;
 
 
-/// set the size of the playing field
-const BOARD_WIDTH: u8 = 20; //20
-const BOARD_HEIGHT: u8 = 17; //17
+/// set the width of the playing field
+const BOARD_WIDTH: u8 = 20;
+/// set the height of the playing field
+const BOARD_HEIGHT: u8 = 17;
 
-/// set the position of the playing field (distance to left/top corner)
+/// Set the y-position of the playing field (distance to left/top corner)
 const ROW_OFFSET: u8 = 2;
+/// Set the x-position of the playing field (distance to left/top corner)
 const COL_OFFSET: u8 = 50;
 
 
 lazy_static! {
-/// the actual falling piece
+/// The actual falling piece
     pub static ref PIECE: Mutex<Piece> = Mutex::new(Piece {
         //the previous position of the piece
         oldx: (BOARD_WIDTH / 2) as i8,
@@ -35,32 +37,32 @@ lazy_static! {
         //the current shape
         shape: vec![vec![0]],
     });
-/// global board value, contains the occupied cells
+/// Global board, contains the occupied cells
     pub static ref BOARD: Mutex<Board> = Mutex::new(Board {
         cells: [[None; BOARD_WIDTH as usize]; BOARD_HEIGHT as usize],
     });
 }
 
-
+/// Struct of the current falling piece
 pub struct Piece {
-    ///the Color of the specific piece
+    ///The Color of the specific piece
     color: Color,
-    ///the current position of the piece in x-direction
+    ///The current position of the piece in x-direction
     posx: i8,
-    ///the current position of the piece in y-direction
+    ///The current position of the piece in y-direction
     posy: i8,
-    ///the previous position of the piece in x-direction
+    ///The previous position of the piece in x-direction
     oldx: i8,
-    ///the previous position of the piece in y-direction
+    ///The previous position of the piece in y-direction
     oldy: i8,
-    ///the previous shape of the piece
+    ///The previous shape of the piece
     oldshape: Vec<Vec<u8>>,
-    ///the current shape of the piece
+    ///The current shape of the piece
     shape: Vec<Vec<u8>>,
 }
 
 impl Piece {
-    /// change the current piece to a random kind of piece
+    /// Change the current piece to a random kind of piece
     /// and put it at the top of the playing field
     pub fn new_random_piece(&mut self) {
         self.oldx = (BOARD_WIDTH / 2) as i8;
@@ -123,7 +125,7 @@ impl Piece {
     }
 
 
-    /// prints the current piece
+    /// Prints the current piece
     pub fn print_piece(&mut self) {
         // delet the previos printed piece
         self.each_old_point(&mut |row, col| {
@@ -200,11 +202,11 @@ impl Piece {
         }
     }
 
-    /// rotate the currnet piece counterclockwise
+    /// Rotate the currnet piece counterclockwise
     pub fn rotate(&mut self) {
         let size = self.shape.len();
 
-        ///lone piece
+        // Clone piece
         let mut new_piece = Piece {
             oldx: self.posx,
             posx: self.posx,
@@ -221,7 +223,7 @@ impl Piece {
             new_piece.oldshape.push(row.clone());
         }
 
-        //rotate the "clone"
+        //Rotate the "clone"
         for row in 0..size / 2 {
             for col in row..(size - row - 1) {
                 let t = new_piece.shape[row][col];
@@ -235,7 +237,7 @@ impl Piece {
             }
         }
 
-        // check if rotation would crash
+        // Check if rotation would crash
         // if it would crash ignore
         // else rotate the current piece
         if !new_piece.collision_test() {
@@ -286,7 +288,7 @@ impl Piece {
         found
     }
 
-    /// add the faling piece to the occupied cells
+    /// Add the falling piece to the occupied cells
     pub fn lock_piece(&mut self) {
         self.each_point(&mut |row, col| {
             let x = self.posx + col;
@@ -317,7 +319,7 @@ impl Piece {
         true
     }
 
-    ///returns each occupied cell of the shape
+    ///Returns each occupied cell of the shape
     fn each_point(&self, callback: &mut FnMut(i8, i8)) {
         let piece_width = self.shape.len() as i8;
         for row in 0..piece_width {
@@ -329,7 +331,7 @@ impl Piece {
         }
     }
 
-    ///return each occupied cell of the previous shape
+    ///Return each occupied cell of the previous shape
     fn each_old_point(&self, callback: &mut FnMut(i8, i8)) {
         let piece_width = self.oldshape.len() as i8;
         for row in 0..piece_width {
@@ -342,13 +344,14 @@ impl Piece {
     }
 }
 
+/// Struct of the global board, contains the occupied cells
 pub struct Board {
     cells: [[Option<Color>; BOARD_WIDTH as usize]; BOARD_HEIGHT as usize],
 }
 
 impl Board {
 
-    ///prints the boarders of the playing field
+    ///Prints the boarders of the playing field
     pub fn render_board(&self) {
         for y in 0..BOARD_HEIGHT {
             vga_buffer::write_at_background(
@@ -377,7 +380,7 @@ impl Board {
         }
     }
 
-    /// clears each line that is filled completely
+    /// Clears each line that is filled completely
     pub fn clear_lines(&mut self) {
         for row_to_check in (0..BOARD_HEIGHT as usize).rev() {
             while !self.cells[row_to_check].iter().any(|x| *x == None) {
@@ -600,6 +603,7 @@ pub fn uptime_temp() {
     finish_task();
 }
 
+/// Task of the Tetris Game
 pub fn tetris() {
     msleep(1000);
     trace_info!();
