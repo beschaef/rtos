@@ -1,3 +1,9 @@
+//! # Module Scheduler
+//!
+//! this module stores all tasks and handle (schedule) all tasks.
+//!
+//! actually this module only support EDF scheduling.
+//!
 use alloc::Vec;
 use memory::MemoryController;
 use spin::Mutex;
@@ -6,6 +12,8 @@ use x86_64;
 use x86_64::instructions::rdtsc;
 use x86_64::structures::idt::ExceptionStackFrame;
 
+/// global variable with informations about the current task.
+/// used, inter alia, to remember the sleep ticks for the scheduler.
 pub static mut RUNNING_TASK: Mutex<TaskData> = Mutex::new(TaskData {
     pid: 0,
     cpu_flags: 0,
@@ -16,9 +24,21 @@ pub static mut RUNNING_TASK: Mutex<TaskData> = Mutex::new(TaskData {
 });
 
 lazy_static! {
-    static ref TASKS: Mutex<Vec<TaskData>> = Mutex::new(vec![]);
+    /// global vector which stores all current tasks.
+    /// all tasks are sorted from: IDLE -> max sleep -> min sleep -> READY
+    pub static ref TASKS: Mutex<Vec<TaskData>> = Mutex::new(vec![]);
 }
 
+/// used to initialize tasks.
+/// for every task (exluding tetris) the function allocates 2 pages (8192B), and then insert a
+/// new TaskData into the `TASKS` vector. Therefore the `stack_pointer` (top address of the
+/// allocated memory) and the `instruction_pointer` (the function) as usize are stored. Also all
+/// Tasks are inserted with TaskStatus `READY` (excluding the idle task, which has all time the
+/// TaskStatus `IDLE`)
+///
+/// # Arguments
+/// * `memory_controller` - needed (and used) to allocate memory.
+///
 pub fn sched_init(memory_controller: &mut MemoryController) {
     let memory = memory_controller.alloc_stack(2).expect("Ooopsie");
     TASKS.lock().insert(
@@ -66,7 +86,7 @@ pub fn sched_init(memory_controller: &mut MemoryController) {
         TaskData::new(
             0,
             x86_64::VirtualAddress(memory.top()),
-            x86_64::VirtualAddress(uptime_temp as usize),
+            x86_64::VirtualAddress(task_keyboard as usize),
             TaskStatus::READY,
         ),
     );
@@ -86,14 +106,36 @@ pub fn sched_init(memory_controller: &mut MemoryController) {
         TaskData::new(
             0,
             x86_64::VirtualAddress(memory.top()),
+            x86_64::VirtualAddress(add_new_temp_clocks as usize),
+            TaskStatus::READY,
+        ),
+    );
+    let memory = memory_controller.alloc_stack(2).expect("Ooopsie");
+    TASKS.lock().insert(
+        0,
+        TaskData::new(
+            0,
+            x86_64::VirtualAddress(memory.top()),
             x86_64::VirtualAddress(idle_task as usize),
             TaskStatus::IDLE,
         ),
     );
-
     trace_info!("initialised scheduler");
 }
 
+/// used to schedule all tasks.
+/// therefore the function saves the `cpu_flags`, `stack_pointer` and `instruction_pointer` given by
+/// the timer interrupt. The choice for the next Task is seperated in three parts:
+/// 1.) There is a `READY` Task in the `TASKS` vector -> schedule this task next.
+/// 2.) Else, the top task `sleep_ticks` are smaller then the actuall timestamp_counter -> schedule
+/// 3.) Else, no task is ready to run -> schedule `Idle` task, respectively, keep `Idle` as running
+/// if `Idle` was the last running task.
+///
+/// # Arguments
+/// * `f` - (ExceptionStackFrame) stores the data which are given by an interrupt, in this case by
+/// a timer interrupt. the `ExceptionStackFrame` including the `cpu_flags`, `stack_pointer`,
+/// `instruction_pointer`, and some other data which the scheduler doesn't use.
+///
 pub fn schedule(f: &mut ExceptionStackFrame) {
     //early_trace!();
     let cpuflags = f.cpu_flags;

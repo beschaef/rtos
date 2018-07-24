@@ -302,7 +302,9 @@ macro_rules! set_trace_level {
     ($e:expr) => {
         use core::any::Any;
         if let Some(f) = (&$e as &Any).downcast_ref::<TraceLevel>() {
-            unsafe{TRACE_LEVEL = *f;}
+            unsafe {
+                TRACE_LEVEL = *f;
+            }
         }
     };
 }

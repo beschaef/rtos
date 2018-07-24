@@ -68,7 +68,7 @@ pub fn get_cpu_freq() -> u64 {
         if CPU_FREQ == 0 {
             //calc_freq();
             //CPU_FREQ = calc_freq();
-            CPU_FREQ = 1_600_000_000
+            CPU_FREQ = 2_700_000_000
         }
         CPU_FREQ as u64
     }
@@ -83,7 +83,9 @@ pub fn msleep(ms: u64) {
     trace_debug!("sleep until: {}", tsc);
     unsafe {
         {
+            x86_64::instructions::interrupts::disable();
             RUNNING_TASK.lock().sleep_ticks = tsc as usize;
+            x86_64::instructions::interrupts::enable();
         }
         int!(0x20);
     }
