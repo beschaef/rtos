@@ -64,8 +64,6 @@ use os_bootinfo::BootInfo;
 use raw_cpuid::CpuId;
 use vga_buffer::Color;
 
-//use memory::heap_allocator::BumpAllocator;
-
 #[lang = "panic_fmt"]
 #[no_mangle]
 pub extern "C" fn rust_begin_panic(

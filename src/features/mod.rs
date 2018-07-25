@@ -4,6 +4,8 @@ pub mod keyboard;
 use scheduler::RUNNING_TASK;
 use x86_64;
 use x86_64::instructions::rdtsc;
+use alloc::string::{ToString,String};
+use raw_cpuid::CpuId;
 
 /// global variable to store the cpu frequency
 static mut CPU_FREQ: u64 = 0;
@@ -95,8 +97,68 @@ fn read_pit() -> u64 {
     return reg;
 }
 
-/// This function returns the cpu frequency, if frequency is unknown, the cpu frequency is calculated.
+/// There are three Ways to get the CPU frequency in a bare-bone system.
+/// This function trys all three ways and take the first which is working.
+/// The first way is to get it directly out of the registry. For this there is the Crate `raw_cpuid`
+/// which provides a lot of functions. In this case the two functions `get_processor_frequency_info()`
+/// and `info.processor_base_frequency()` are used to get the frequency. This is not working in all
+/// ways, i.e. in qemu the function return 0. On the other hand, when the system is loaded on an
+/// usb-stick and booted directly the function returned the frequency on the tested systems.
+///
+/// The second wys is also with the `raw_cpuid` Crate . Most systems are returning there processor
+/// brand with the `processor_brand_string()` function which is also in the `raw_cpuid` crate.
+/// The string includes the frequency in GHz. A tested computer returned
+/// `Intel(R) Core(TM) i3-4010U CPU @ 1.70GHz` for example. To get the frequency the function is
+/// looking for the substring ` @ ` and then convert the followed 'string numbers' into numbers.
+/// If the Processor Brand is also empty it is possible to calculate the frequency. The calculation
+/// is never exact, so this is the last way to get the frequency. The calculation is described in
+/// `features::calc_freq()`
 pub fn get_cpu_freq() -> u64 {
+
+    let cpuid = CpuId::new();
+    if let Some(info) = cpuid.get_processor_frequency_info() {
+        unsafe{CPU_FREQ = info.processor_base_frequency() as u64 * 1024 * 1024;}
+    }
+    if unsafe{CPU_FREQ} == 0 {
+        if let Some(info) = cpuid.get_extended_function_info() {
+            if let Some(brand) = info.processor_brand_string() {
+                trace_fatal!("tes{:?}", "t");
+                let mut first = 'a';
+                let mut second = 'a';
+                let mut third = 'a';
+                let mut found_freq = false;
+                let mut found_dot = false;
+                let mut digit_big = 0.0;
+                let mut digit_small = 0.0;
+                let mut step = 0.1;
+                for b in brand.chars() {
+                    first = second;
+                    second = third;
+                    third = b;
+                    if first == ' ' && second == '@' && third == ' ' {
+                        found_freq = true;
+                    }
+                    if found_freq && b.is_numeric() && !found_dot {
+                        digit_big = (digit_big * 10.0) + b.to_digit(10).unwrap() as f32;
+                    }
+                    if found_freq && b == '.' {
+                        found_dot = true;
+                        continue;
+                    }
+                    if found_dot && b.is_numeric() {
+                        digit_small = digit_small + b.to_digit(10).unwrap() as f32 * step;
+                        step *= 0.1;
+                    }
+                    if found_freq && found_dot && !b.is_numeric() {
+                        break;
+                    }
+                }
+                if found_freq {
+                    unsafe{ CPU_FREQ = ((digit_big + digit_small) * 1000.0 *1000.0 *1000.0 ) as u64};
+                }
+            }
+        }
+    }
     unsafe {
         if CPU_FREQ == 0 {
             CPU_FREQ = calc_freq();
