@@ -4,76 +4,172 @@ pub mod keyboard;
 use scheduler::RUNNING_TASK;
 use x86_64;
 use x86_64::instructions::rdtsc;
+use alloc::string::{ToString,String};
+use raw_cpuid::CpuId;
 
-static mut CPU_FREQ: usize = 0;
+/// global variable to store the cpu frequency
+static mut CPU_FREQ: u64 = 0;
 
-/// Wird genutzt um die cpu_frequenz zu berechnen.
-/// Code ist angelehnt an https://wiki.osdev.org/Detecting_CPU_Speed
-/// Unterliegt aktuell noch Schwankungen um die 15%
-#[allow(dead_code)]
-fn calc_freq() -> usize {
+/// With pit and tsc the cpu frequency is calculated. To prevent interrupt issues, all intterrupts are
+/// disabled during the calulation. Currently there is no `rust-way` to initialize and modify the pit. Therefore
+/// the function is using inline assembly to initialize the pit.
+/// To calculate the frequency the current pit and tsc are read two times with a minimum difference of 40 pit ticks.
+/// After that the difference of both timer is taken and then the quotient is taken.
+/// For a better estimate the steps are repeated 5 times.
+/// The last step is to multiply the result value with the pit frequency(1.193MHz) to get the cpu frequency.
+pub fn calc_freq() -> u64 {
     unsafe {
         x86_64::instructions::interrupts::disable();
     }
-    const SIZE: usize = 50;
-    let mut array: [usize; SIZE] = [0; SIZE];
-    let mut stsc: usize;
-    let mut etsc: usize;
-    let lo: usize = 0;
-    let hi: usize = 0;
-    let mut i = SIZE;
-    loop {
-        unsafe {
-            i -= 1;
-            asm!("
+    let mut r0: u64 = 0;
+    let mut f0: u64 = 0;
+    let mut r1: u64 = 0;
+    let mut r2: u64 = 0;
+    let mut t0: u64 = 0;
+    let mut t1: u64 = 0;
+    let mut hi: u64 = 0;
+    let mut lo: u64 = 0;
+    let mut ticks: u64 = 0;
+    let pit_freq = 1193182;
+
+    trace_fatal!("pit_freq {:?}", pit_freq as u64);
+
+    unsafe {
+        asm!("
                     mov al, 0x34
                     out 0x43, al
 
-                    mov rcx, 30000
+                    mov rcx, 50000
                     mov al, cl
                     out 0x40, al
                     mov al, ch
                     out 0x40, al"::::"intel", "volatile");
+    }
 
-            stsc = x86_64::instructions::rdtsc() as usize;
-            for _i in 0..4000 {
-                asm!("  xor eax,edx
-                        xor edx,eax"::::"intel", "volatile");
+    for i in 0..5 {
+        t0 = read_pit();
+        t1 = t0;
+        trace_fatal!("t0 {:?}", t0);
+        while (t0 - t1) < 20 {
+            t1 = read_pit();
+            unsafe {
+                trace_fatal!("t1 {:?}", t1);
+                r1 = x86_64::instructions::rdtsc();
             }
-            etsc = x86_64::instructions::rdtsc() as usize;
-            //        asm!("
-            //                out 0x43, 0x04");
-
-            asm!(""::"{rcx}"(lo),"{rcx}"(hi));
         }
-        let ticks: usize = 0x7300 - ((hi * 256) + lo);
-        let freq: usize = (((etsc - stsc) * 1193182) / ticks) as usize;
-        array[i] = freq;
-        if i == 0 {
-            break;
+        t0 = t1;
+        while (t0 - t1) < 40 {
+            t1 = read_pit();
+            trace_fatal!("t1 {:?}", t1);
+            unsafe {
+                r2 = x86_64::instructions::rdtsc();
+            }
         }
+        r0 += r2 - r1;
+        trace_fatal!("r0 {:?}", r0);
+
+        f0 += (t0 - t1);
+        trace_fatal!("f0 {:?}", f0);
     }
+    trace_fatal!("freq {:?}", r0 / f0);
+    trace_fatal!("freq {:?}", (r0 / f0 * pit_freq));
 
-    let mut freq: usize = 0;
-
-    for x in array.iter() {
-        freq += *x;
-    }
-
-    return freq / array.len();
+    return (r0 / f0 * pit_freq) as u64;
 }
 
+/// Currently there is no `rust-way` to get the remaining pit-ticks. Therefore the function use
+/// inline assembly to get the remaining pit-ticks.
+fn read_pit() -> u64 {
+    let mut reg: u64 = 0;
+    unsafe {
+        asm!("   and rax, 0
+                 mov     al,0h
+                 out     43h,al
+                 in      al,40h
+                 mov     ah,al
+                 in      al,40h
+                 rol     ax,8
+
+                 push rax
+                 pop $0
+                 ":"=r"(reg)::"rax":"intel","volatile");
+    }
+    return reg;
+}
+
+/// There are three Ways to get the CPU frequency in a bare-bone system.
+/// This function trys all three ways and take the first which is working.
+/// The first way is to get it directly out of the registry. For this there is the Crate `raw_cpuid`
+/// which provides a lot of functions. In this case the two functions `get_processor_frequency_info()`
+/// and `info.processor_base_frequency()` are used to get the frequency. This is not working in all
+/// ways, i.e. in qemu the function return 0. On the other hand, when the system is loaded on an
+/// usb-stick and booted directly the function returned the frequency on the tested systems.
+///
+/// The second wys is also with the `raw_cpuid` Crate . Most systems are returning there processor
+/// brand with the `processor_brand_string()` function which is also in the `raw_cpuid` crate.
+/// The string includes the frequency in GHz. A tested computer returned
+/// `Intel(R) Core(TM) i3-4010U CPU @ 1.70GHz` for example. To get the frequency the function is
+/// looking for the substring ` @ ` and then convert the followed 'string numbers' into numbers.
+/// If the Processor Brand is also empty it is possible to calculate the frequency. The calculation
+/// is never exact, so this is the last way to get the frequency. The calculation is described in
+/// `features::calc_freq()`
 pub fn get_cpu_freq() -> u64 {
+
+    let cpuid = CpuId::new();
+    if let Some(info) = cpuid.get_processor_frequency_info() {
+        unsafe{CPU_FREQ = info.processor_base_frequency() as u64 * 1024 * 1024;}
+    }
+    if unsafe{CPU_FREQ} == 0 {
+        if let Some(info) = cpuid.get_extended_function_info() {
+            if let Some(brand) = info.processor_brand_string() {
+                trace_fatal!("tes{:?}", "t");
+                let mut first = 'a';
+                let mut second = 'a';
+                let mut third = 'a';
+                let mut found_freq = false;
+                let mut found_dot = false;
+                let mut digit_big = 0.0;
+                let mut digit_small = 0.0;
+                let mut step = 0.1;
+                for b in brand.chars() {
+                    first = second;
+                    second = third;
+                    third = b;
+                    if first == ' ' && second == '@' && third == ' ' {
+                        found_freq = true;
+                    }
+                    if found_freq && b.is_numeric() && !found_dot {
+                        digit_big = (digit_big * 10.0) + b.to_digit(10).unwrap() as f32;
+                    }
+                    if found_freq && b == '.' {
+                        found_dot = true;
+                        continue;
+                    }
+                    if found_dot && b.is_numeric() {
+                        digit_small = digit_small + b.to_digit(10).unwrap() as f32 * step;
+                        step *= 0.1;
+                    }
+                    if found_freq && found_dot && !b.is_numeric() {
+                        break;
+                    }
+                }
+                if found_freq {
+                    unsafe{ CPU_FREQ = ((digit_big + digit_small) * 1000.0 *1000.0 *1000.0 ) as u64};
+                }
+            }
+        }
+    }
     unsafe {
         if CPU_FREQ == 0 {
-            //calc_freq();
-            //CPU_FREQ = calc_freq();
-            CPU_FREQ = 2_700_000_000
+            CPU_FREQ = calc_freq();
         }
         CPU_FREQ as u64
     }
 }
 
+/// The function calculates how many tsc ticks the current process has to sleep in dependent on the
+/// given time in milliseconds. After this the function saves the `sleep_ticks` in the `RUNNING_TASK`
+/// struct. To prevent CPU wasting the timer interrupt is called an thus the scheduler is called.
 pub fn msleep(ms: u64) {
     trace_info!();
     let one_sec = get_cpu_freq();
