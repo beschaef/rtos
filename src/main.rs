@@ -166,9 +166,10 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
         if let Some(f) = tasks::NEW_TASKS.lock().pop() {
             trace_warn!("added new task");
             let memory = memory_controller
-                .alloc_stack(2)
+                .alloc_stack(3)
                 .expect("can't allocate stack");
             scheduler::TASKS.lock().push(tasks::TaskData::new(
+                'm',
                 0,
                 x86_64::VirtualAddress(memory.top()),
                 f,

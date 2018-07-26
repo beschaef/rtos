@@ -15,12 +15,16 @@ use x86_64::structures::idt::ExceptionStackFrame;
 /// global variable with informations about the current task.
 /// used, inter alia, to remember the sleep ticks for the scheduler.
 pub static mut RUNNING_TASK: Mutex<TaskData> = Mutex::new(TaskData {
+    name: 'x',
     pid: 0,
     cpu_flags: 0,
     stack_pointer: x86_64::VirtualAddress(0),
     instruction_pointer: x86_64::VirtualAddress(0),
     status: TaskStatus::RUNNING,
     sleep_ticks: 0,
+    time_sleep: 1,
+    time_active: 1,
+    last_time_stamp: 1,
 });
 
 lazy_static! {
@@ -40,84 +44,103 @@ lazy_static! {
 /// * `memory_controller` - needed (and used) to allocate memory.
 ///
 pub fn sched_init(memory_controller: &mut MemoryController) {
-    let memory = memory_controller.alloc_stack(2).expect("Ooopsie");
+    let memory = memory_controller.alloc_stack(3).expect("Ooopsie");
     TASKS.lock().insert(
         0,
         TaskData::new(
+            '1',
             0,
             x86_64::VirtualAddress(memory.top()),
             x86_64::VirtualAddress(uptime1 as usize),
             TaskStatus::READY,
         ),
     );
-    let memory = memory_controller.alloc_stack(2).expect("Ooopsie");
+    let memory = memory_controller.alloc_stack(5).expect("Ooopsie");
     TASKS.lock().insert(
         0,
         TaskData::new(
+            '2',
             0,
             x86_64::VirtualAddress(memory.top()),
             x86_64::VirtualAddress(uptime2 as usize),
             TaskStatus::READY,
         ),
     );
-    let memory = memory_controller.alloc_stack(2).expect("Ooopsie");
+    let memory = memory_controller.alloc_stack(3).expect("Ooopsie");
     TASKS.lock().insert(
         0,
         TaskData::new(
+            '3',
             0,
             x86_64::VirtualAddress(memory.top()),
             x86_64::VirtualAddress(uptime3 as usize),
             TaskStatus::READY,
         ),
     );
-    let memory = memory_controller.alloc_stack(2).expect("Ooopsie");
+    let memory = memory_controller.alloc_stack(3).expect("Ooopsie");
     TASKS.lock().insert(
         0,
         TaskData::new(
+            '4',
             0,
             x86_64::VirtualAddress(memory.top()),
             x86_64::VirtualAddress(uptime4 as usize),
             TaskStatus::READY,
         ),
     );
-    let memory = memory_controller.alloc_stack(2).expect("Ooopsie");
+    let memory = memory_controller.alloc_stack(3).expect("Ooopsie");
     TASKS.lock().insert(
         0,
         TaskData::new(
+            'k',
             0,
             x86_64::VirtualAddress(memory.top()),
             x86_64::VirtualAddress(task_keyboard as usize),
             TaskStatus::READY,
         ),
     );
-    let memory = memory_controller.alloc_stack(4).expect("Ooopsie");
+    let memory = memory_controller.alloc_stack(3).expect("Ooopsie");
     TASKS.lock().insert(
         0,
         TaskData::new(
+            't',
             0,
             x86_64::VirtualAddress(memory.top()),
             x86_64::VirtualAddress(tetris as usize),
             TaskStatus::READY,
         ),
     );
-    let memory = memory_controller.alloc_stack(2).expect("Ooopsie");
+    let memory = memory_controller.alloc_stack(3).expect("Ooopsie");
     TASKS.lock().insert(
         0,
         TaskData::new(
+            '5',
             0,
             x86_64::VirtualAddress(memory.top()),
             x86_64::VirtualAddress(add_new_temp_clocks as usize),
             TaskStatus::READY,
         ),
     );
-    let memory = memory_controller.alloc_stack(2).expect("Ooopsie");
+    let memory = memory_controller.alloc_stack(3).expect("Ooopsie");
     TASKS.lock().insert(
         0,
         TaskData::new(
+            'i',
             0,
             x86_64::VirtualAddress(memory.top()),
             x86_64::VirtualAddress(idle_task as usize),
             TaskStatus::IDLE,
+        ),
+    );
+    let memory = memory_controller.alloc_stack(3).expect("Ooopsie");
+    TASKS.lock().insert(
+        0,
+        TaskData::new(
+            'h',
+            0,
+            x86_64::VirtualAddress(memory.top()),
+            x86_64::VirtualAddress(htop as usize),
+            TaskStatus::READY,
         ),
     );
     trace_info!("initialised scheduler");
@@ -165,8 +188,12 @@ pub fn schedule(f: &mut ExceptionStackFrame) {
     unsafe {
         let not_finished = RUNNING_TASK.lock().status != TaskStatus::FINISHED;
         if not_finished {
+            let name_c = RUNNING_TASK.lock().name;
             let pid_c = RUNNING_TASK.lock().pid;
             let sleep_ticks_c = RUNNING_TASK.lock().sleep_ticks;
+            let time_sleep_c = RUNNING_TASK.lock().time_sleep;
+            let time_active_c = RUNNING_TASK.lock().time_active;
+            let last_time_stamp_c = RUNNING_TASK.lock().last_time_stamp;
             // PID = 0 --> main function
             //let old = TaskData::new(cpuflags, stackpointer, instructionpointer, to_run.status);
             let new_status = if RUNNING_TASK.lock().status == TaskStatus::IDLE {
@@ -175,12 +202,16 @@ pub fn schedule(f: &mut ExceptionStackFrame) {
                 TaskStatus::RUNNING
             };
             let old = TaskData::copy(
+                name_c,
                 pid_c,
                 cpuflags,
                 stackpointer,
                 instructionpointer,
                 new_status,
                 sleep_ticks_c,
+                time_sleep_c,
+                tsc as usize - last_time_stamp_c,
+                tsc as usize,
             );
             let mut position = 0;
             if old.status == TaskStatus::IDLE {
@@ -195,13 +226,18 @@ pub fn schedule(f: &mut ExceptionStackFrame) {
                 TASKS.lock().insert(position, old);
             }
         }
+
         f.stack_pointer = to_run.stack_pointer;
         f.instruction_pointer = to_run.instruction_pointer;
 
+        RUNNING_TASK.lock().name = to_run.name;
         RUNNING_TASK.lock().status = to_run.status;
         RUNNING_TASK.lock().stack_pointer = to_run.stack_pointer;
         RUNNING_TASK.lock().instruction_pointer = to_run.instruction_pointer;
         RUNNING_TASK.lock().pid = to_run.pid;
         RUNNING_TASK.lock().sleep_ticks = to_run.sleep_ticks;
+        RUNNING_TASK.lock().time_sleep = tsc as usize - to_run.last_time_stamp;
+        RUNNING_TASK.lock().time_active = to_run.time_active;
+        RUNNING_TASK.lock().last_time_stamp = tsc as usize;
     }
 }

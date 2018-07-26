@@ -7,6 +7,8 @@ use vga_buffer;
 use vga_buffer::Color;
 use x86_64::instructions::rdtsc;
 use x86_64::VirtualAddress;
+use x86_64;
+use scheduler::TASKS;
 
 static mut PID_COUNTER: usize = 0;
 
@@ -433,47 +435,64 @@ pub enum TaskStatus {
 
 #[derive(Debug, Clone)]
 pub struct TaskData {
+    pub name: char,
     pub pid: usize,
     pub cpu_flags: u64,
     pub stack_pointer: VirtualAddress,
     pub instruction_pointer: VirtualAddress,
     pub status: TaskStatus,
     pub sleep_ticks: usize,
+    pub time_sleep: usize,
+    pub time_active: usize,
+    pub last_time_stamp: usize,
 }
 
 ///unsafe block is actually safe because we're initializing the tasks before the interrupts are enabled
 impl TaskData {
-    pub fn new(
+    pub fn new (
+        name: char,
         cpu_flags: u64,
         stack_pointer: VirtualAddress,
         instruction_pointer: VirtualAddress,
         status: TaskStatus,
     ) -> Self {
         TaskData {
+            name: name,
             pid: increment_pid(),
             cpu_flags,
             stack_pointer,
             instruction_pointer,
             status,
             sleep_ticks: 0,
+            time_sleep: 1,
+            time_active: 1,
+            last_time_stamp: 1,
         }
     }
 
     pub fn copy(
+        name: char,
         pid: usize,
         cpu_flags: u64,
         stack_pointer: VirtualAddress,
         instruction_pointer: VirtualAddress,
         status: TaskStatus,
         sleep_ticks: usize,
+        time_sleep: usize,
+        time_active: usize,
+        last_time_stamp: usize,
     ) -> Self {
         TaskData {
+            name,
             pid,
             cpu_flags,
             stack_pointer,
             instruction_pointer,
             status,
             sleep_ticks,
+            time_sleep,
+            time_active,
+            last_time_stamp,
         }
     }
 }
@@ -621,6 +640,35 @@ pub fn tetris() {
             msleep(1000);
         }
     }
+    // end the task
+    finish_task();
+}
+
+/// Task of the htop
+/// prints aut all the active tasks and compute their utilization
+/// the utilization results from the active time divided by the active + passive time
+/// the process is looping permanently while the processes are calculated and printed there are no interrupts allowed to avoid concurrency problems
+pub fn htop() {
+    trace_info!();
+    while(true) {
+        msleep(1000);
+        unsafe {
+            x86_64::instructions::interrupts::disable();
+        }
+        for (i, task) in TASKS.lock().iter().enumerate() {
+            //compute utilization
+            let utilization = task.time_active*100/(task.time_sleep + task.time_active);
+            let name =format!("task {}:{}% : {}/{} ", task.name, utilization,task.time_active/1000000,task.time_sleep/1000000+task.time_active/1000000);
+            //delete next line
+            vga_buffer::write_at_background("                    ", i as u8 +1, 15, Color::Black, Color::Black);
+            vga_buffer::write_at_background(&name, i as u8, 15, Color::Red, Color::Black);
+        }
+
+        unsafe {
+            x86_64::instructions::interrupts::enable();
+        }
+    }
+
     // end the task
     finish_task();
 }
