@@ -123,6 +123,9 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
 
     scheduler::sched_init(&mut memory_controller);
 
+    print_welcome();
+    print_booting();
+    
     interrupts::init_timer();
     msleep(1000);
 
@@ -202,3 +205,53 @@ use linked_list_allocator::LockedHeap;
 
 #[global_allocator]
 static HEAP_ALLOCATOR: LockedHeap = LockedHeap::empty();
+
+fn print_welcome() {
+    println!(" #     #                                                           ");
+    println!(" #  #  # ###### #       ####   ####  #    # ######    #####  ####  ");
+    println!(" #  #  # #      #      #    # #    # ##  ## #           #   #    # ");
+    println!(" #  #  # #####  #      #      #    # # ## # #####       #   #    #  ");
+    println!(" #  #  # #      #      #      #    # #    # #           #   #    #  ");
+    println!(" #  #  # #      #      #    # #    # #    # #           #   #    #   ");
+    println!("  ## ##  ###### ######  ####   ####  #    # ######      #    #### ");
+    println!("                                                                     ");
+    println!("                      ######  ####### #######  #####         ");
+    println!("                      #     #    #    #     # #     #         ");
+    println!("                      #     #    #    #     # #           ");
+    println!("                      ######     #    #     #  #####     ");
+    println!("                      #   #      #    #     #       #    ");
+    println!("                      #    #     #    #     # #     #   ");
+    println!("                      #     #    #    #######  #####     ");
+    for x in 0..vga_buffer::BUFFER_HEIGHT / 4 {
+        println!("");
+    }
+}
+
+fn print_booting() {
+    println!(" #######                   #####");
+    println!("    #    #    # ######    #     # #   #  ####  ##### ###### #    #");
+    println!("    #    #    # #         #        # #  #        #   #      ##  ##");
+    println!("    #    ###### #####      #####    #    ####    #   #####  # ## #");
+    println!("    #    #    # #               #   #        #   #   #      #    #");
+    println!("    #    #    # #         #     #   #   #    #   #   #      #    #");
+    println!("    #    #    # ######     #####    #    ####    #   ###### #    #");
+    println!("");
+    println!("");
+    println!(" #  ####     #####   ####   ####  ##### # #    #  ####");
+    println!(" # #         #    # #    # #    #   #   # ##   # #    #");
+    println!(" #  ####     #####  #    # #    #   #   # # #  # #");
+    println!(" #      #    #    # #    # #    #   #   # #  # # #  ###");
+    println!(" # #    #    #    # #    # #    #   #   # #   ## #    #");
+    println!(" #  ####     #####   ####   ####    #   # #    #  ####");
+    println!("");
+    println!("");
+    println!("#####  #      ######   ##    ####  ######    #    #   ##   # #####");
+    println!("#    # #      #       #  #  #      #         #    #  #  #  #   #");
+    println!("#    # #      #####  #    #  ####  #####     #    # #    # #   #");
+    println!("#####  #      #      ######      # #         # ## # ###### #   #");
+    println!("#      #      #      #    # #    # #         ##  ## #    # #   #");
+    println!("#      ###### ###### #    #  ####  ######    #    # #    # #   #");
+    for x in 0..vga_buffer::BUFFER_HEIGHT {
+        println!("");
+    }
+}
