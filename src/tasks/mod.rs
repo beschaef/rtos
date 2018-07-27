@@ -580,6 +580,7 @@ pub fn uptime4() {
     }
 }
 
+#[allow(dead_code)]
 pub fn add_new_temp_clocks() {
     msleep(2000);
     trace_info!();
