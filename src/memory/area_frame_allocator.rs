@@ -1,3 +1,4 @@
+//! code of the `blog-os by phil oppermann`
 extern crate os_bootinfo;
 use memory::{Frame, FrameAllocator};
 

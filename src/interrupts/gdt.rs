@@ -1,3 +1,4 @@
+//! code of the `blog-os by phil oppermann`
 use x86_64::structures::gdt::SegmentSelector;
 use x86_64::structures::tss::TaskStateSegment;
 use x86_64::PrivilegeLevel;

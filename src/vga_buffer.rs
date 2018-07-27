@@ -1,6 +1,5 @@
-// #[allow(dead_code)] to supress the unsused warning for the values 16-255
-// #[derive(Debug, Clone, Copy)] enables copy semantic and make it printable
-// #[repr(u8)] variants stored as u8 (u4 would be enough, but rust has no u4)
+//! excluding the function `write_at_background` is everything code of the
+//! `blog-os py phil oppermann`
 use core::fmt::{Arguments, Result, Write};
 use spin::Mutex;
 use volatile::Volatile;

@@ -1,3 +1,4 @@
+//! code of the `blog-os by phil oppermann`
 use memory::Frame; // needed later
 
 pub struct Entry(u64);
