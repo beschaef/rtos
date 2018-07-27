@@ -59,7 +59,7 @@ extern crate bit_field;
 extern crate cpuio;
 extern crate linked_list_allocator;
 
-use features::{get_cpu_freq, msleep};
+use features::{get_cpu_freq, msleep, active_sleep};
 use os_bootinfo::BootInfo;
 use raw_cpuid::CpuId;
 use vga_buffer::Color;
@@ -223,6 +223,7 @@ fn print_welcome() {
     println!("                      #   #      #    #     #       #    ");
     println!("                      #    #     #    #     # #     #   ");
     println!("                      #     #    #    #######  #####     ");
+    active_sleep(1000);
     for x in 0..vga_buffer::BUFFER_HEIGHT / 4 {
         println!("");
     }
@@ -252,6 +253,7 @@ fn print_booting() {
     println!("#####  #      #      ######      # #         # ## # ###### #   #");
     println!("#      #      #      #    # #    # #         ##  ## #    # #   #");
     println!("#      ###### ###### #    #  ####  ######    #    # #    # #   #");
+    active_sleep(1000);
     for x in 0..vga_buffer::BUFFER_HEIGHT {
         println!("");
     }
