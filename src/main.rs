@@ -77,9 +77,21 @@ pub extern "C" fn rust_begin_panic(
     loop {}
 }
 
-// this is the function for the entry point on Linux.
-// the "-> !"" means that the function is diverging, i.e. not allowed to ever return.
-// 0xb8000 is the address of the VGA buffer
+/// This is the function for the entry point of the system.
+/// Here gets the system initialized.
+/// For a system with multiple tasks with a scheduler it is important have a memory_controller to
+/// allocate stack for each task. To handle strings, Vec, etc. a heap allocator is needed. This
+/// system is using a linked list heap alloctor. Actually its only possible to allocate heap and stack.
+/// So it is important to reuse as much Variables as possible.
+///
+/// We decided to continue using the memory_controller in the main task, because this is not global
+/// in the current version. Although it is possible to pass the memory_controller to a function, but
+/// it is not possible to use it in a new task.
+///
+/// To start additional tasks in the running system, they must be added to the vector NEW_TASKS.
+/// The main task looks every 200ms for new tasks in the vector. If there is a new task, it is
+/// allocated for this new memory and then pushed to the TASKS vector, which the scheduler uses.
+///
 #[no_mangle]
 pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
     boot_info
@@ -106,6 +118,16 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
     let cpuid = CpuId::new();
 
     //vga_buffer::write_at_background(cpuid.max_eax_value, 19,2, Color::Blue, Color::Red);
+
+    //msleep(10000);
+
+    scheduler::sched_init(&mut memory_controller);
+
+    print_welcome();
+    print_booting();
+    
+    interrupts::init_timer();
+    msleep(1000);
 
     if let Some(info) = cpuid.get_vendor_info() {
         vga_buffer::write_at_background(info.as_string(), 20, 2, Color::Blue, Color::Red);
@@ -144,8 +166,6 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
         vga_buffer::write_at_background("Can't get cpu freq info!", 23, 2, Color::Blue, Color::Red);
     }
 
-    //msleep(10000);
-
     trace_fatal!("Freq{:?}", cpuid!(1));
     trace_fatal!("System Info");
     trace_fatal!("Calculated CPU-frequency: {}", freq);
@@ -158,9 +178,6 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
     trace_warn!();
     trace_error!();
 
-    scheduler::sched_init(&mut memory_controller);
-    interrupts::init_timer();
-    msleep(1000);
     loop {
         msleep(200);
         if let Some(f) = tasks::NEW_TASKS.lock().pop() {
@@ -189,3 +206,53 @@ use linked_list_allocator::LockedHeap;
 
 #[global_allocator]
 static HEAP_ALLOCATOR: LockedHeap = LockedHeap::empty();
+
+fn print_welcome() {
+    println!(" #     #                                                           ");
+    println!(" #  #  # ###### #       ####   ####  #    # ######    #####  ####  ");
+    println!(" #  #  # #      #      #    # #    # ##  ## #           #   #    # ");
+    println!(" #  #  # #####  #      #      #    # # ## # #####       #   #    #  ");
+    println!(" #  #  # #      #      #      #    # #    # #           #   #    #  ");
+    println!(" #  #  # #      #      #    # #    # #    # #           #   #    #   ");
+    println!("  ## ##  ###### ######  ####   ####  #    # ######      #    #### ");
+    println!("                                                                     ");
+    println!("                      ######  ####### #######  #####         ");
+    println!("                      #     #    #    #     # #     #         ");
+    println!("                      #     #    #    #     # #           ");
+    println!("                      ######     #    #     #  #####     ");
+    println!("                      #   #      #    #     #       #    ");
+    println!("                      #    #     #    #     # #     #   ");
+    println!("                      #     #    #    #######  #####     ");
+    for x in 0..vga_buffer::BUFFER_HEIGHT / 4 {
+        println!("");
+    }
+}
+
+fn print_booting() {
+    println!(" #######                   #####");
+    println!("    #    #    # ######    #     # #   #  ####  ##### ###### #    #");
+    println!("    #    #    # #         #        # #  #        #   #      ##  ##");
+    println!("    #    ###### #####      #####    #    ####    #   #####  # ## #");
+    println!("    #    #    # #               #   #        #   #   #      #    #");
+    println!("    #    #    # #         #     #   #   #    #   #   #      #    #");
+    println!("    #    #    # ######     #####    #    ####    #   ###### #    #");
+    println!("");
+    println!("");
+    println!(" #  ####     #####   ####   ####  ##### # #    #  ####");
+    println!(" # #         #    # #    # #    #   #   # ##   # #    #");
+    println!(" #  ####     #####  #    # #    #   #   # # #  # #");
+    println!(" #      #    #    # #    # #    #   #   # #  # # #  ###");
+    println!(" # #    #    #    # #    # #    #   #   # #   ## #    #");
+    println!(" #  ####     #####   ####   ####    #   # #    #  ####");
+    println!("");
+    println!("");
+    println!("#####  #      ######   ##    ####  ######    #    #   ##   # #####");
+    println!("#    # #      #       #  #  #      #         #    #  #  #  #   #");
+    println!("#    # #      #####  #    #  ####  #####     #    # #    # #   #");
+    println!("#####  #      #      ######      # #         # ## # ###### #   #");
+    println!("#      #      #      #    # #    # #         ##  ## #    # #   #");
+    println!("#      ###### ###### #    #  ####  ######    #    # #    # #   #");
+    for x in 0..vga_buffer::BUFFER_HEIGHT {
+        println!("");
+    }
+}
