@@ -186,3 +186,15 @@ pub fn msleep(ms: u64) {
         int!(0x20);
     }
 }
+
+/// This sleep is not calling the scheduler.
+/// It is used for early sleeps, before any tasks oder scheduler are running.
+pub fn active_sleep(ms: u64) {
+    let one_sec = get_cpu_freq();
+    let time = one_sec * (ms / 1000); // (one_sec * ms / 1000) as i64; doesnt work!
+    let tsc = time + rdtsc();
+    let mut wait = rdtsc();
+    while wait < tsc {
+        wait = rdtsc();
+    }
+}
