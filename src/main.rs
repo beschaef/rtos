@@ -119,6 +119,13 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
 
     //vga_buffer::write_at_background(cpuid.max_eax_value, 19,2, Color::Blue, Color::Red);
 
+    //msleep(10000);
+
+    scheduler::sched_init(&mut memory_controller);
+
+    interrupts::init_timer();
+    msleep(1000);
+
     if let Some(info) = cpuid.get_vendor_info() {
         vga_buffer::write_at_background(info.as_string(), 20, 2, Color::Blue, Color::Red);
         trace_fatal!("Vendor: {}\n", info.as_string());
@@ -156,8 +163,6 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
         vga_buffer::write_at_background("Can't get cpu freq info!", 23, 2, Color::Blue, Color::Red);
     }
 
-    //msleep(10000);
-
     trace_fatal!("Freq{:?}", cpuid!(1));
     trace_fatal!("System Info");
     trace_fatal!("Calculated CPU-frequency: {}", freq);
@@ -170,9 +175,6 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
     trace_warn!();
     trace_error!();
 
-    scheduler::sched_init(&mut memory_controller);
-    interrupts::init_timer();
-    msleep(1000);
     loop {
         msleep(200);
         if let Some(f) = tasks::NEW_TASKS.lock().pop() {
