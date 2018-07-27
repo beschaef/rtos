@@ -1,3 +1,4 @@
+//! code of the `blog-os by phil oppermann`
 use super::entry::*;
 use super::table::{self, Level4, Table};
 use super::{Page, PhysicalAddress, VirtualAddress, ENTRY_COUNT};

@@ -1,3 +1,4 @@
+//! code of the `blog-os by phil oppermann`
 use super::table::{Level1, Table};
 use super::Page;
 use super::{ActivePageTable, VirtualAddress};

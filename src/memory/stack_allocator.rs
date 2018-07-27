@@ -1,3 +1,4 @@
+//! code of the `blog-os by phil oppermann`
 use memory::paging::PageIter;
 use memory::paging::{self, ActivePageTable, Page};
 use memory::{FrameAllocator, PAGE_SIZE};
