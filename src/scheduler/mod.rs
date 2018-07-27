@@ -1,8 +1,7 @@
 //! # Module Scheduler
 //!
-//! this module stores all tasks and handle (schedule) all tasks.
-//!
-//! actually this module only support EDF scheduling.
+//! This module stores all tasks and handle (schedule) all tasks.
+//! currently this module only supports EDF scheduling.
 //!
 use alloc::Vec;
 use memory::MemoryController;
@@ -20,7 +19,7 @@ pub static mut RUNNING_TASK: Mutex<TaskData> = Mutex::new(TaskData {
     cpu_flags: 0,
     stack_pointer: x86_64::VirtualAddress(0),
     instruction_pointer: x86_64::VirtualAddress(0),
-    status: TaskStatus::RUNNING,
+    status: TaskStatus::READY,
     sleep_ticks: 0,
     time_sleep: 1,
     time_active: 1,
@@ -99,29 +98,18 @@ pub fn sched_init(memory_controller: &mut MemoryController) {
             TaskStatus::READY,
         ),
     );
-    let memory = memory_controller.alloc_stack(3).expect("Ooopsie");
-    TASKS.lock().insert(
-        0,
-        TaskData::new(
-            't',
-            0,
-            x86_64::VirtualAddress(memory.top()),
-            x86_64::VirtualAddress(tetris as usize),
-            TaskStatus::READY,
-        ),
-    );
-    let memory = memory_controller.alloc_stack(3).expect("Ooopsie");
+    let memory = memory_controller.alloc_stack(2).expect("Ooopsie");
     TASKS.lock().insert(
         0,
         TaskData::new(
             '5',
             0,
             x86_64::VirtualAddress(memory.top()),
-            x86_64::VirtualAddress(add_new_temp_clocks as usize),
+            x86_64::VirtualAddress(shell as usize),
             TaskStatus::READY,
         ),
     );
-    let memory = memory_controller.alloc_stack(3).expect("Ooopsie");
+    let memory = memory_controller.alloc_stack(2).expect("Ooopsie");
     TASKS.lock().insert(
         0,
         TaskData::new(

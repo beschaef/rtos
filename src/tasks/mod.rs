@@ -1,6 +1,6 @@
 use alloc::Vec;
 use features::keyboard;
-use features::msleep;
+use features::{msleep, shell::*};
 use scheduler::RUNNING_TASK;
 use spin::Mutex;
 use vga_buffer;
@@ -9,8 +9,10 @@ use x86_64::instructions::rdtsc;
 use x86_64::VirtualAddress;
 use x86_64;
 use scheduler::TASKS;
+use alloc::string::{String, ToString};
 
 static mut PID_COUNTER: usize = 0;
+pub static mut TASK_STARTED: bool = false;
 
 
 /// set the width of the playing field
@@ -45,6 +47,9 @@ lazy_static! {
         cells: [[None; BOARD_WIDTH as usize]; BOARD_HEIGHT as usize],
     });
     pub static ref NEW_TASKS: Mutex<Vec<VirtualAddress>> = Mutex::new(vec![]);
+
+/// global shell object
+    pub static ref SHELL: Mutex<Shell> = Mutex::new(Shell::new(Color::DarkGray, Color::Cyan, (21, 11)));
 }
 
 /// Struct of the current falling piece
@@ -630,6 +635,12 @@ pub fn tetris() {
 
     // while the game isnt over
     while !gameover {
+        if SHELL.lock().terminate_running_task == true {
+            SHELL.lock().reset_shell();
+            // end the task
+            finish_task();
+        }
+
         PIECE.lock().print_piece();
         // new piece every second
         msleep(1000);
@@ -640,7 +651,23 @@ pub fn tetris() {
             msleep(1000);
         }
     }
-    // end the task
+
+
+}
+
+pub fn shell() {
+    SHELL.lock().init_shell();
+    loop {
+        unsafe {
+            if TASK_STARTED != true
+             {
+                SHELL.lock().cursor_on();
+                msleep(1000);
+                SHELL.lock().cursor_off();
+                msleep(1000);
+            }
+        }
+    }
     finish_task();
 }
 
@@ -688,10 +715,7 @@ pub fn task_keyboard() {
             while port::inb(0x64) & 0x1 == 1 {
                 let scan_code = port::inb(0x60);
                 if let Some(c) = keyboard::from_scancode(scan_code as usize) {
-                    //print!("{:?}", c);
-                    if c == 'h' {
-                        loop {}
-                    }
+                    SHELL.lock().parse_input(c);
                 }
             }
             msleep(50);

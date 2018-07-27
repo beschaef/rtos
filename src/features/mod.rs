@@ -1,5 +1,6 @@
 pub mod clock;
 pub mod keyboard;
+pub mod shell;
 
 use scheduler::RUNNING_TASK;
 use x86_64;

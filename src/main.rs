@@ -21,7 +21,7 @@
 #![feature(ptr_internals)]
 #![feature(asm)]
 #![feature(abi_x86_interrupt)]
-#![feature(alloc)]
+#![feature(alloc, collections)]
 #![feature(allocator_api)]
 #![feature(const_atomic_usize_new)]
 #![feature(global_allocator, heap_api)]
@@ -100,8 +100,6 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
 
     let mut memory_controller = memory::init(boot_info);
 
-    //vga_buffer::clear_screen();
-
     unsafe {
         HEAP_ALLOCATOR
             .lock()
@@ -117,10 +115,6 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
 
     let cpuid = CpuId::new();
 
-    //vga_buffer::write_at_background(cpuid.max_eax_value, 19,2, Color::Blue, Color::Red);
-
-    //msleep(10000);
-
     scheduler::sched_init(&mut memory_controller);
 
     print_welcome();
@@ -130,13 +124,25 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
     msleep(1000);
 
     if let Some(info) = cpuid.get_vendor_info() {
-        vga_buffer::write_at_background(info.as_string(), 20, 2, Color::Blue, Color::Red);
+       vga_buffer::write_at_background(
+            info.as_string(),
+            15,
+            2,
+            Color::Blue,
+            Color::Red,
+        );
         trace_fatal!("Vendor: {}\n", info.as_string());
     }
 
     if let Some(info) = cpuid.get_extended_function_info() {
         if let Some(brand) = info.processor_brand_string() {
-            vga_buffer::write_at_background(brand, 21, 2, Color::Blue, Color::Red);
+            vga_buffer::write_at_background(
+                brand,
+                16,
+                2,
+                Color::Blue,
+                Color::Red,
+            );
             trace_fatal!("Model: {}\n", brand);
         }
     }
@@ -150,40 +156,40 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
         trace_fatal!("Bus MHz: {}\n", info.bus_frequency());
         vga_buffer::write_at_background(
             &format!("CPU Base MHz: {}\n", info.processor_base_frequency()),
-            22,
+            17,
             2,
             Color::Blue,
             Color::Red,
         );
         vga_buffer::write_at_background(
             &format!("CPU Max MHz: {}\n", info.processor_max_frequency()),
-            23,
+            18,
             2,
             Color::Blue,
             Color::Red,
         );
     } else {
-        vga_buffer::write_at_background("Can't get cpu freq info!", 23, 2, Color::Blue, Color::Red);
+        vga_buffer::write_at_background(
+            "Can't get cpu freq info!",
+            19,
+            2,
+            Color::Blue,
+            Color::Red,
+        );
     }
 
     trace_fatal!("Freq{:?}", cpuid!(1));
     trace_fatal!("System Info");
     trace_fatal!("Calculated CPU-frequency: {}", freq);
     trace_fatal!("Heap Size: {}", HEAP_SIZE);
-    trace_debug!();
-    trace_info!();
-    trace_info!();
     set_trace_level!(TraceLevel::Debug);
-    trace_info!();
-    trace_warn!();
-    trace_error!();
 
     loop {
         msleep(200);
         if let Some(f) = tasks::NEW_TASKS.lock().pop() {
             trace_warn!("added new task");
             let memory = memory_controller
-                .alloc_stack(3)
+                .alloc_stack(4)
                 .expect("can't allocate stack");
             scheduler::TASKS.lock().push(tasks::TaskData::new(
                 'm',
@@ -197,7 +203,7 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
 }
 
 pub const HEAP_START: usize = 0o_000_001_000_000_0000;
-pub const HEAP_SIZE: usize = 200 * 1024; // 100 KiB
+pub const HEAP_SIZE: usize = 300 * 1024; // 100 KiB
                                          //
                                          //#[global_allocator]
                                          //static HEAP_ALLOCATOR: BumpAllocator = BumpAllocator::new(HEAP_START, HEAP_START + HEAP_SIZE);
