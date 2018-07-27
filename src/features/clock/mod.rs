@@ -1,3 +1,6 @@
+//! This was a very first implementation of a clock. It was mainly used to learn and work with some
+//! rust specific stuff like match and structs.
+//! the code is marked as `dead_code` and will not be used in the os.
 use vga_buffer;
 use vga_buffer::Color;
 

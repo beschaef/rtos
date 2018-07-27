@@ -7,6 +7,8 @@ use tasks::PIECE;
 ///
 /// Reference table:
 ///   http://www.computer-engineering.org/ps2keyboard/scancodes1.html
+///
+/// The arrow keys are used to play tetris.
 pub fn from_scancode(code: usize) -> Option<char> {
     let printable = match code {
         0x1e => 'a',
