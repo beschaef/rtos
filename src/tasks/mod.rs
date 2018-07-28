@@ -434,25 +434,44 @@ impl Board {
     }
 }
 
+/// Used to represent the actual task status. In this system are used four different status.
 #[derive(Debug, Clone, PartialEq)]
 pub enum TaskStatus {
+    /// used for the idle task
     IDLE,
+    /// used for a new task which never run before
     READY,
+    /// used for all active tasks in the system
     RUNNING,
+    /// used when a task is terminated to show the scheduler that this task can be removed from the
+    /// tasks list.
     FINISHED,
 }
 
+/// Stores all relevant data of a task. Each task gets a own `TaskData`.
 #[derive(Debug, Clone)]
 pub struct TaskData {
+    /// for simplification only a char is used to represent the name of the task. Strings are causing
+    /// problems, due to allocation and ownership.
     pub name: char,
+    /// identification of a task. The main Task starts by `1` each new task will increment this value
+    /// by 1.
     pub pid: usize,
+    /// stores the `cpu_flags` for scheduling
     pub cpu_flags: u64,
+    /// stores the `stack_pointer` for scheduling
     pub stack_pointer: VirtualAddress,
+    /// stores the `instruction_pointer` for scheduling
     pub instruction_pointer: VirtualAddress,
+    /// stores the `TaskStatus` to show the scheduler in which status a task is.
     pub status: TaskStatus,
+    /// saves a timestamp. The task sleeps until this timestamp.
     pub sleep_ticks: usize,
+    /// used for logging / `htop`. stores the time the task slept.
     pub time_sleep: usize,
+    /// used for logging / `htop`. stores the time the task was active.
     pub time_active: usize,
+    /// used for logging / `htop`. stores a delta value for calculation.
     pub last_time_stamp: usize,
 }
 
