@@ -506,6 +506,8 @@ impl TaskData {
     }
 }
 
+/// Clock which count every second. The clock is starting by 00:00:00 on the top left corner.
+/// This function raises a variable by one each time and then calcute the seconds / minutes / hours.
 pub fn uptime1() {
     msleep(1000);
     trace_info!();
@@ -526,6 +528,7 @@ pub fn uptime1() {
     }
 }
 
+/// similar to `uptime1()` but on row 2
 pub fn uptime2() {
     msleep(1000);
     trace_info!();
@@ -547,6 +550,7 @@ pub fn uptime2() {
     }
 }
 
+/// similar to `uptime1()` but on row 4
 pub fn uptime3() {
     msleep(1000);
     trace_info!();
@@ -568,6 +572,7 @@ pub fn uptime3() {
     }
 }
 
+/// similar to `uptime1()` but on row 6
 pub fn uptime4() {
     msleep(1000);
     trace_info!();
