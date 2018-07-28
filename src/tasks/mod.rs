@@ -382,13 +382,14 @@ impl Board {
                 Color::Red,
             );
         }
+        vga_buffer::write_at_background(&format!("Highscore: "), ROW_OFFSET -1, COL_OFFSET, Color::White, Color::Black);
     }
 
     /// Clears each line that is filled completely
     pub fn clear_lines(&mut self) {
         for row_to_check in (0..BOARD_HEIGHT as usize).rev() {
             while !self.cells[row_to_check].iter().any(|x| *x == None) {
-                vga_buffer::write_at_background(&format!("{:4}", increment_highscore()), ROW_OFFSET -1, COL_OFFSET, Color::White, Color::Black);
+                vga_buffer::write_at_background(&format!("{:4}", increment_highscore()), ROW_OFFSET -1, COL_OFFSET + 15, Color::White, Color::Black);
                 for row in (1..row_to_check + 1).rev() {
                     self.cells[row] = self.cells[row - 1];
                     for col in 0..BOARD_WIDTH as usize {
