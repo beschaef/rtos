@@ -11,7 +11,7 @@ use x86_64;
 use scheduler::TASKS;
 
 static mut PID_COUNTER: usize = 0;
-
+static mut HIGHSCORE: usize = 0;
 
 /// set the width of the playing field
 const BOARD_WIDTH: u8 = 20;
@@ -388,7 +388,7 @@ impl Board {
     pub fn clear_lines(&mut self) {
         for row_to_check in (0..BOARD_HEIGHT as usize).rev() {
             while !self.cells[row_to_check].iter().any(|x| *x == None) {
-                print!("!");
+                vga_buffer::write_at_background(&format!("{:4}", increment_highscore()), ROW_OFFSET -1, COL_OFFSET, Color::White, Color::Black);
                 for row in (1..row_to_check + 1).rev() {
                     self.cells[row] = self.cells[row - 1];
                     for col in 0..BOARD_WIDTH as usize {
@@ -713,6 +713,13 @@ fn increment_pid() -> usize {
     unsafe {
         PID_COUNTER += 1;
         PID_COUNTER
+    }
+}
+
+fn increment_highscore() -> usize {
+    unsafe {
+        HIGHSCORE += 1;
+        HIGHSCORE
     }
 }
 
