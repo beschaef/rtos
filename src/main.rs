@@ -1,18 +1,14 @@
-//! Code for the RTOS
+//! This Operation System is based on the blog posts by phil oppermann.
+//! While this os was programmed the second edition was not finished. So the system is using all
+//! new stuff of the second edition which was ready. The rest which was needed are taken from the
+//! first edition of the blog posts.
 //!
-//! #![no_std] is used to disable the standard library
-//! #![no_main] is added to tell the rust compiler that we don't want to use
-//! the normal entry point chain. This also requires to remove the main
-//! function, because there's nothing to call the main
+//! There are still some very very rare bugs.
+//! It can happen that the scheduler is called before the tasks are initialzed. This causes a panic
+//! and the system dies.
 //!
-//! to build and link the Code on Linux use
-//! 'cargo rustc -- -Z pre-link-arg=-nostartfiles'
-//!
-//! to build and link it under macOS use
-//! 'cargo rustc -- -Z pre-link-arg=-lSystem'
-//!
-//! to build our programm without an underlaying OS use
-//! 'xargo build --target x86_64-rtos
+//! There are also very rarely `Page Faults` which are not clear where they came from. This is hard
+//! to debug, because the `gdb` debugger will cause other faults when trying to debug.
 //!
 #![feature(lang_items)]
 #![no_std]
@@ -207,6 +203,7 @@ use linked_list_allocator::LockedHeap;
 #[global_allocator]
 static HEAP_ALLOCATOR: LockedHeap = LockedHeap::empty();
 
+/// prints a welcome message on the screen
 fn print_welcome() {
     println!(" #     #                                                           ");
     println!(" #  #  # ###### #       ####   ####  #    # ######    #####  ####  ");
@@ -229,6 +226,7 @@ fn print_welcome() {
     }
 }
 
+/// prints booting information to the screen
 fn print_booting() {
     println!(" #######                   #####");
     println!("    #    #    # ######    #     # #   #  ####  ##### ###### #    #");
