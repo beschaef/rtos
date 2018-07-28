@@ -589,6 +589,8 @@ pub fn uptime4() {
     }
 }
 
+/// used to add frequently new temporary clocks. Only use this Function for testing. Otherwise the
+/// System will run out of heap, due to allocating frequently new heap.
 #[allow(dead_code)]
 pub fn add_new_temp_clocks() {
     msleep(2000);
@@ -604,6 +606,8 @@ pub fn add_new_temp_clocks() {
     }
 }
 
+/// temporary clock to show that it is possibly to start and stop tasks while the system is running.
+/// The clock counts similar to the other clock tasks, but only counts to four.
 pub fn uptime_temp() {
     msleep(1000);
     trace_info!();
@@ -721,6 +725,8 @@ pub fn task_keyboard() {
     }
 }
 
+/// Idle Task, only running when no other task is ready. This function needs inline assemby to bring
+/// the cpu into the pause mode and not waste cpu.
 pub fn idle_task() {
     trace_info!("IDLE");
     loop {
@@ -730,6 +736,8 @@ pub fn idle_task() {
     }
 }
 
+/// Each new Task is getting an unique Process ID. This Function simply count the PID_COUNTER by one
+/// and then return the nur ID.
 fn increment_pid() -> usize {
     unsafe {
         PID_COUNTER += 1;
@@ -737,6 +745,7 @@ fn increment_pid() -> usize {
     }
 }
 
+/// Similar to the `increment_pid` function, this function is raising the tetris highscore by one.
 fn increment_highscore() -> usize {
     unsafe {
         HIGHSCORE += 1;
@@ -744,6 +753,8 @@ fn increment_highscore() -> usize {
     }
 }
 
+/// always called at the end of a function. The running task is marked as finished. After that the
+/// scheduler is called by a timer interrupt.
 fn finish_task() {
     trace_info!("TASK FINISHED");
     unsafe {
