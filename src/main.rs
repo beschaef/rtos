@@ -60,6 +60,8 @@ use os_bootinfo::BootInfo;
 use raw_cpuid::CpuId;
 use vga_buffer::Color;
 
+/// Used when a panic occour. The function prints the file and the line on the screen when a panic
+/// occur.
 #[lang = "panic_fmt"]
 #[no_mangle]
 pub extern "C" fn rust_begin_panic(
