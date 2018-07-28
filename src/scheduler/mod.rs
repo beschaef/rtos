@@ -203,7 +203,7 @@ pub fn schedule(f: &mut ExceptionStackFrame) {
             };
             let time_active_c = if (tsc as usize) < last_time_stamp_c {
                 0
-            } else{
+            } else {
                 tsc as usize - last_time_stamp_c
             };
             let old = TaskData::copy(

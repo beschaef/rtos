@@ -59,7 +59,7 @@ extern crate bit_field;
 extern crate cpuio;
 extern crate linked_list_allocator;
 
-use features::{get_cpu_freq, msleep, active_sleep};
+use features::{active_sleep, get_cpu_freq, msleep};
 use os_bootinfo::BootInfo;
 use raw_cpuid::CpuId;
 use vga_buffer::Color;
@@ -125,7 +125,7 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
 
     print_welcome();
     print_booting();
-    
+
     interrupts::init_timer();
     msleep(1000);
 

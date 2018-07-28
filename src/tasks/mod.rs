@@ -2,13 +2,13 @@ use alloc::Vec;
 use features::keyboard;
 use features::msleep;
 use scheduler::RUNNING_TASK;
+use scheduler::TASKS;
 use spin::Mutex;
 use vga_buffer;
 use vga_buffer::Color;
+use x86_64;
 use x86_64::instructions::rdtsc;
 use x86_64::VirtualAddress;
-use x86_64;
-use scheduler::TASKS;
 
 static mut PID_COUNTER: usize = 0;
 static mut HIGHSCORE: usize = 0;
@@ -22,7 +22,6 @@ const BOARD_HEIGHT: u8 = 17;
 const ROW_OFFSET: u8 = 2;
 /// Set the x-position of the playing field (distance to left/top corner)
 const COL_OFFSET: u8 = 50;
-
 
 lazy_static! {
 /// The actual falling piece
@@ -127,7 +126,6 @@ impl Piece {
             _ => println!("error creating new random piece"),
         }
     }
-
 
     /// Prints the current piece
     pub fn print_piece(&mut self) {
@@ -267,7 +265,6 @@ impl Piece {
         }
     }
 
-
     /// Check if the piece would crash against the boarders of the playing field or against an occupied cell.
     ///
     /// # Return
@@ -354,7 +351,6 @@ pub struct Board {
 }
 
 impl Board {
-
     ///Prints the boarders of the playing field
     pub fn render_board(&self) {
         for y in 0..BOARD_HEIGHT {
@@ -382,14 +378,26 @@ impl Board {
                 Color::Red,
             );
         }
-        vga_buffer::write_at_background(&format!("Highscore: "), ROW_OFFSET -2, COL_OFFSET -1, Color::White, Color::Black);
+        vga_buffer::write_at_background(
+            &format!("Highscore: "),
+            ROW_OFFSET - 2,
+            COL_OFFSET - 1,
+            Color::White,
+            Color::Black,
+        );
     }
 
     /// Clears each line that is filled completely
     pub fn clear_lines(&mut self) {
         for row_to_check in (0..BOARD_HEIGHT as usize).rev() {
             while !self.cells[row_to_check].iter().any(|x| *x == None) {
-                vga_buffer::write_at_background(&format!("{:4}", increment_highscore()), ROW_OFFSET -2, COL_OFFSET + 10, Color::White, Color::Black);
+                vga_buffer::write_at_background(
+                    &format!("{:4}", increment_highscore()),
+                    ROW_OFFSET - 2,
+                    COL_OFFSET + 10,
+                    Color::White,
+                    Color::Black,
+                );
                 for row in (1..row_to_check + 1).rev() {
                     self.cells[row] = self.cells[row - 1];
                     for col in 0..BOARD_WIDTH as usize {
@@ -450,7 +458,7 @@ pub struct TaskData {
 
 ///unsafe block is actually safe because we're initializing the tasks before the interrupts are enabled
 impl TaskData {
-    pub fn new (
+    pub fn new(
         name: char,
         cpu_flags: u64,
         stack_pointer: VirtualAddress,
@@ -652,17 +660,29 @@ pub fn tetris() {
 /// the process is looping permanently while the processes are calculated and printed there are no interrupts allowed to avoid concurrency problems
 pub fn htop() {
     trace_info!();
-    while(true) {
+    while (true) {
         msleep(1000);
         unsafe {
             x86_64::instructions::interrupts::disable();
         }
         for (i, task) in TASKS.lock().iter().enumerate() {
             //compute utilization
-            let utilization = task.time_active*100/(task.time_sleep + task.time_active);
-            let name =format!("task {}:{}% : {}/{} ", task.name, utilization,task.time_active/1000000,task.time_sleep/1000000+task.time_active/1000000);
+            let utilization = task.time_active * 100 / (task.time_sleep + task.time_active);
+            let name = format!(
+                "task {}:{}% : {}/{} ",
+                task.name,
+                utilization,
+                task.time_active / 1000000,
+                task.time_sleep / 1000000 + task.time_active / 1000000
+            );
             //delete next line
-            vga_buffer::write_at_background("                    ", i as u8 +1, 15, Color::Black, Color::Black);
+            vga_buffer::write_at_background(
+                "                    ",
+                i as u8 + 1,
+                15,
+                Color::Black,
+                Color::Black,
+            );
             vga_buffer::write_at_background(&name, i as u8, 15, Color::Red, Color::Black);
         }
 

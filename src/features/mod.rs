@@ -1,11 +1,11 @@
 pub mod clock;
 pub mod keyboard;
 
+use alloc::string::{String, ToString};
+use raw_cpuid::CpuId;
 use scheduler::RUNNING_TASK;
 use x86_64;
 use x86_64::instructions::rdtsc;
-use alloc::string::{ToString,String};
-use raw_cpuid::CpuId;
 
 /// global variable to store the cpu frequency
 static mut CPU_FREQ: u64 = 0;
@@ -114,12 +114,13 @@ fn read_pit() -> u64 {
 /// is never exact, so this is the last way to get the frequency. The calculation is described in
 /// `features::calc_freq()`
 pub fn get_cpu_freq() -> u64 {
-
     let cpuid = CpuId::new();
     if let Some(info) = cpuid.get_processor_frequency_info() {
-        unsafe{CPU_FREQ = info.processor_base_frequency() as u64 * 1024 * 1024;}
+        unsafe {
+            CPU_FREQ = info.processor_base_frequency() as u64 * 1024 * 1024;
+        }
     }
-    if unsafe{CPU_FREQ} == 0 {
+    if unsafe { CPU_FREQ } == 0 {
         if let Some(info) = cpuid.get_extended_function_info() {
             if let Some(brand) = info.processor_brand_string() {
                 trace_fatal!("tes{:?}", "t");
@@ -154,7 +155,9 @@ pub fn get_cpu_freq() -> u64 {
                     }
                 }
                 if found_freq {
-                    unsafe{ CPU_FREQ = ((digit_big + digit_small) * 1000.0 *1000.0 *1000.0 ) as u64};
+                    unsafe {
+                        CPU_FREQ = ((digit_big + digit_small) * 1000.0 * 1000.0 * 1000.0) as u64
+                    };
                 }
             }
         }
