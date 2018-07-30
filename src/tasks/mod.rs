@@ -2,18 +2,18 @@ use alloc::Vec;
 use features::keyboard;
 use features::{msleep, test_bit, shell::*};
 use scheduler::RUNNING_TASK;
+use scheduler::TASKS;
 use spin::Mutex;
 use vga_buffer;
-use vga_buffer::Color;
+use vga_buffer::{Color, clear_row};
 use x86_64::instructions::rdtsc;
 use x86_64::VirtualAddress;
 use x86_64;
-use scheduler::TASKS;
 use alloc::string::{String, ToString};
 
 static mut PID_COUNTER: usize = 0;
 pub static mut TASK_STARTED: bool = false;
-
+static mut HIGHSCORE: usize = 0;
 
 /// set the width of the playing field
 const BOARD_WIDTH: u8 = 20;
@@ -24,7 +24,6 @@ const BOARD_HEIGHT: u8 = 17;
 const ROW_OFFSET: u8 = 2;
 /// Set the x-position of the playing field (distance to left/top corner)
 const COL_OFFSET: u8 = 50;
-
 
 lazy_static! {
 /// The actual falling piece
@@ -132,6 +131,17 @@ impl Piece {
         }
     }
 
+    pub fn parse_control(&mut self, control: String){
+        if control == "ARROW_UP" {
+            self.rotate();
+        } else if control == "ARROW_DOWN" {
+            self.advance_game();
+        } else if control == "ARROW_LEFT" {
+            self.move_piece(-1, 0);
+        } else if control == "ARROW_RIGHT" {
+            self.move_piece(1, 0);
+        }
+    }
 
     /// Prints the current piece
     pub fn print_piece(&mut self) {
@@ -271,7 +281,6 @@ impl Piece {
         }
     }
 
-
     /// Check if the piece would crash against the boarders of the playing field or against an occupied cell.
     ///
     /// # Return
@@ -358,7 +367,6 @@ pub struct Board {
 }
 
 impl Board {
-
     ///Prints the boarders of the playing field
     pub fn render_board(&self) {
         for y in 0..BOARD_HEIGHT {
@@ -386,13 +394,26 @@ impl Board {
                 Color::Red,
             );
         }
+        vga_buffer::write_at_background(
+            &format!("Highscore: "),
+            ROW_OFFSET - 2,
+            COL_OFFSET - 1,
+            Color::White,
+            Color::Black,
+        );
     }
 
     /// Clears each line that is filled completely
     pub fn clear_lines(&mut self) {
         for row_to_check in (0..BOARD_HEIGHT as usize).rev() {
             while !self.cells[row_to_check].iter().any(|x| *x == None) {
-                print!("!");
+                vga_buffer::write_at_background(
+                    &format!("{:4}", increment_highscore()),
+                    ROW_OFFSET - 2,
+                    COL_OFFSET + 10,
+                    Color::White,
+                    Color::Black,
+                );
                 for row in (1..row_to_check + 1).rev() {
                     self.cells[row] = self.cells[row - 1];
                     for col in 0..BOARD_WIDTH as usize {
@@ -429,31 +450,50 @@ impl Board {
     }
 }
 
+/// Used to represent the actual task status. In this system are used four different status.
 #[derive(Debug, Clone, PartialEq)]
 pub enum TaskStatus {
+    /// used for the idle task
     IDLE,
+    /// used for a new task which never run before
     READY,
+    /// used for all active tasks in the system
     RUNNING,
+    /// used when a task is terminated to show the scheduler that this task can be removed from the
+    /// tasks list.
     FINISHED,
 }
 
+/// Stores all relevant data of a task. Each task gets a own `TaskData`.
 #[derive(Debug, Clone)]
 pub struct TaskData {
+    /// for simplification only a char is used to represent the name of the task. Strings are causing
+    /// problems, due to allocation and ownership.
     pub name: char,
+    /// identification of a task. The main Task starts by `1` each new task will increment this value
+    /// by 1.
     pub pid: usize,
+    /// stores the `cpu_flags` for scheduling
     pub cpu_flags: u64,
+    /// stores the `stack_pointer` for scheduling
     pub stack_pointer: VirtualAddress,
+    /// stores the `instruction_pointer` for scheduling
     pub instruction_pointer: VirtualAddress,
+    /// stores the `TaskStatus` to show the scheduler in which status a task is.
     pub status: TaskStatus,
+    /// saves a timestamp. The task sleeps until this timestamp.
     pub sleep_ticks: usize,
+    /// used for logging / `htop`. stores the time the task slept.
     pub time_sleep: usize,
+    /// used for logging / `htop`. stores the time the task was active.
     pub time_active: usize,
+    /// used for logging / `htop`. stores a delta value for calculation.
     pub last_time_stamp: usize,
 }
 
 ///unsafe block is actually safe because we're initializing the tasks before the interrupts are enabled
 impl TaskData {
-    pub fn new (
+    pub fn new(
         name: char,
         cpu_flags: u64,
         stack_pointer: VirtualAddress,
@@ -501,6 +541,8 @@ impl TaskData {
     }
 }
 
+/// Clock which count every second. The clock is starting by 00:00:00 on the top left corner.
+/// This function raises a variable by one each time and then calcute the seconds / minutes / hours.
 pub fn uptime1() {
     msleep(1000);
     trace_info!();
@@ -521,6 +563,7 @@ pub fn uptime1() {
     }
 }
 
+/// similar to `uptime1()` but on row 2
 pub fn uptime2() {
     msleep(1000);
     trace_info!();
@@ -542,6 +585,7 @@ pub fn uptime2() {
     }
 }
 
+/// similar to `uptime1()` but on row 4
 pub fn uptime3() {
     msleep(1000);
     trace_info!();
@@ -563,6 +607,7 @@ pub fn uptime3() {
     }
 }
 
+/// similar to `uptime1()` but on row 6
 pub fn uptime4() {
     msleep(1000);
     trace_info!();
@@ -584,6 +629,8 @@ pub fn uptime4() {
     }
 }
 
+/// used to add frequently new temporary clocks. Only use this Function for testing. Otherwise the
+/// System will run out of heap, due to allocating frequently new heap.
 #[allow(dead_code)]
 pub fn add_new_temp_clocks() {
     msleep(2000);
@@ -599,6 +646,8 @@ pub fn add_new_temp_clocks() {
     }
 }
 
+/// temporary clock to show that it is possibly to start and stop tasks while the system is running.
+/// The clock counts similar to the other clock tasks, but only counts to four.
 pub fn uptime_temp() {
     msleep(1000);
     trace_info!();
@@ -618,6 +667,7 @@ pub fn uptime_temp() {
         trace_debug!("Uptime_temp written {:?}", text);
         msleep(1000);
     }
+    clear_row(10);
     finish_task();
 }
 
@@ -687,7 +737,13 @@ pub fn htop() {
             let percent_digits = calc_float_percent_from_int(task.time_active, task.time_active + task.time_sleep, 4);
             let name =format!("Task {}: {}{}.{}{}%", task.name, percent_digits[0], percent_digits[1], percent_digits[2], percent_digits[3]);
             //delete next line
-            vga_buffer::write_at_background("                    ", i as u8 +1, 15, Color::Black, Color::Black);
+            vga_buffer::write_at_background(
+                "                    ",
+                i as u8 + 1,
+                15,
+                Color::Black,
+                Color::Black,
+            );
             vga_buffer::write_at_background(&name, i as u8, 15, Color::Red, Color::Black);
         }
 
@@ -739,6 +795,8 @@ pub fn task_keyboard() {
     }
 }
 
+/// Idle Task, only running when no other task is ready. This function needs inline assemby to bring
+/// the cpu into the pause mode and not waste cpu.
 pub fn idle_task() {
     trace_info!("IDLE");
     loop {
@@ -748,6 +806,8 @@ pub fn idle_task() {
     }
 }
 
+/// Each new Task is getting an unique Process ID. This Function simply count the PID_COUNTER by one
+/// and then return the nur ID.
 fn increment_pid() -> usize {
     unsafe {
         PID_COUNTER += 1;
@@ -755,6 +815,16 @@ fn increment_pid() -> usize {
     }
 }
 
+/// Similar to the `increment_pid` function, this function is raising the tetris highscore by one.
+fn increment_highscore() -> usize {
+    unsafe {
+        HIGHSCORE += 1;
+        HIGHSCORE
+    }
+}
+
+/// always called at the end of a function. The running task is marked as finished. After that the
+/// scheduler is called by a timer interrupt.
 fn finish_task() {
     trace_info!("TASK FINISHED");
     unsafe {

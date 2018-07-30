@@ -102,7 +102,7 @@ pub fn sched_init(memory_controller: &mut MemoryController) {
     TASKS.lock().insert(
         0,
         TaskData::new(
-            '5',
+            's',
             0,
             x86_64::VirtualAddress(memory.top()),
             x86_64::VirtualAddress(shell as usize),
@@ -191,7 +191,7 @@ pub fn schedule(f: &mut ExceptionStackFrame) {
             };
             let time_active_c = if (tsc as usize) < last_time_stamp_c {
                 0
-            } else{
+            } else {
                 tsc as usize - last_time_stamp_c
             };
             let old = TaskData::copy(

@@ -64,46 +64,10 @@ pub fn from_scancode(code: usize) -> Option<String> {
         0x37 => "*", // Keypad
         0x4a => "-", // Keypad
         0x4e => "+", // Keypad,
-        0x48 => {
-            {
-                let mut locked = PIECE.try_lock();
-                if locked.is_some() {
-                    let mut unwrapped = locked.expect("ROTATE PANIC");
-                    unwrapped.rotate();
-                }
-            }
-            return None;
-        } // arrow up,
-        0x50 => {
-            {
-                let mut locked = PIECE.try_lock();
-                if locked.is_some() {
-                    let mut unwrapped = locked.expect("DOWN PANIC");
-                    unwrapped.advance_game();
-                }
-            }
-            return None;
-        } // arrow down,
-        0x4b => {
-            {
-                let mut locked = PIECE.try_lock();
-                if locked.is_some() {
-                    let mut unwrapped = locked.expect("LEFT PANIC");
-                    unwrapped.move_piece(-1, 0);
-                }
-            }
-            return None;
-        } // arrow left,
-        0x4d => {
-            {
-                let mut locked = PIECE.try_lock();
-                if locked.is_some() {
-                    let mut unwrapped = locked.expect("RIGHT PANIC");
-                    unwrapped.move_piece(1, 0);
-                }
-            }
-            return None;
-        } // arrow right
+        0x48 => "ARROW_UP",
+        0x50 => "ARROW_DOWN",
+        0x4b => "ARROW_LEFT",
+        0x4d => "ARROW_RIGHT",
         0x1c => "ENTER", // Enter
         0x1d => "CTRL_LEFT",
         0x0e => "BACKSPACE",

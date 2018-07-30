@@ -1,18 +1,14 @@
-//! Code for the RTOS
+//! This Operation System is based on the blog posts by phil oppermann.
+//! While this os was programmed the second edition was not finished. So the system is using all
+//! new stuff of the second edition which was ready. The rest which was needed are taken from the
+//! first edition of the blog posts.
 //!
-//! #![no_std] is used to disable the standard library
-//! #![no_main] is added to tell the rust compiler that we don't want to use
-//! the normal entry point chain. This also requires to remove the main
-//! function, because there's nothing to call the main
+//! There are still some very very rare bugs.
+//! It can happen that the scheduler is called before the tasks are initialzed. This causes a panic
+//! and the system dies.
 //!
-//! to build and link the Code on Linux use
-//! 'cargo rustc -- -Z pre-link-arg=-nostartfiles'
-//!
-//! to build and link it under macOS use
-//! 'cargo rustc -- -Z pre-link-arg=-lSystem'
-//!
-//! to build our programm without an underlaying OS use
-//! 'xargo build --target x86_64-rtos
+//! There are also very rarely `Page Faults` which are not clear where they came from. This is hard
+//! to debug, because the `gdb` debugger will cause other faults when trying to debug.
 //!
 #![feature(lang_items)]
 #![no_std]
@@ -59,11 +55,15 @@ extern crate bit_field;
 extern crate cpuio;
 extern crate linked_list_allocator;
 
-use features::{get_cpu_freq, msleep, active_sleep};
+use features::{active_sleep, get_cpu_freq, msleep};
 use os_bootinfo::BootInfo;
 use raw_cpuid::CpuId;
 use vga_buffer::Color;
+use tasks::{tetris, uptime_temp};
+use alloc::string::{String, ToString};
 
+/// Used when a panic occour. The function prints the file and the line on the screen when a panic
+/// occur.
 #[lang = "panic_fmt"]
 #[no_mangle]
 pub extern "C" fn rust_begin_panic(
@@ -117,66 +117,25 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
 
     scheduler::sched_init(&mut memory_controller);
 
-    print_welcome();
-    print_booting();
-    
-    interrupts::init_timer();
-    msleep(1000);
-
+    let mut vendor_info = "".to_string();
     if let Some(info) = cpuid.get_vendor_info() {
-       vga_buffer::write_at_background(
-            info.as_string(),
-            15,
-            2,
-            Color::Blue,
-            Color::Red,
-        );
-        trace_fatal!("Vendor: {}\n", info.as_string());
+        vendor_info = info.as_string().to_string();
+        trace_fatal!("Vendor: {}\n", vendor_info);
     }
 
+    let mut brand_info = "".to_string();
     if let Some(info) = cpuid.get_extended_function_info() {
         if let Some(brand) = info.processor_brand_string() {
-            vga_buffer::write_at_background(
-                brand,
-                16,
-                2,
-                Color::Blue,
-                Color::Red,
-            );
-            trace_fatal!("Model: {}\n", brand);
+            brand_info = brand.to_string();
+            trace_fatal!("Model: {}\n", brand_info);
         }
     }
 
-    if let Some(info) = cpuid.get_processor_frequency_info() {
-        //println!("CPU Base MHz: {}\n", info.processor_base_frequency());
-        //println!("CPU Max MHz: {}\n", info.processor_max_frequency());
-        //println!("Bus MHz: {}\n", info.bus_frequency());
-        trace_fatal!("CPU Base MHz: {}\n", info.processor_base_frequency());
-        trace_fatal!("CPU Max MHz: {}\n", info.processor_max_frequency());
-        trace_fatal!("Bus MHz: {}\n", info.bus_frequency());
-        vga_buffer::write_at_background(
-            &format!("CPU Base MHz: {}\n", info.processor_base_frequency()),
-            17,
-            2,
-            Color::Blue,
-            Color::Red,
-        );
-        vga_buffer::write_at_background(
-            &format!("CPU Max MHz: {}\n", info.processor_max_frequency()),
-            18,
-            2,
-            Color::Blue,
-            Color::Red,
-        );
-    } else {
-        vga_buffer::write_at_background(
-            "Can't get cpu freq info!",
-            19,
-            2,
-            Color::Blue,
-            Color::Red,
-        );
-    }
+    print_welcome(vendor_info, brand_info);
+    print_booting();
+
+    interrupts::init_timer();
+    msleep(1000);
 
     trace_fatal!("Freq{:?}", cpuid!(1));
     trace_fatal!("System Info");
@@ -187,12 +146,20 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
     loop {
         msleep(200);
         if let Some(f) = tasks::NEW_TASKS.lock().pop() {
+            let mut name = ' ';
+            if f == x86_64::VirtualAddress(tetris as usize) {
+                name = 't';
+            } else if f == x86_64::VirtualAddress(uptime_temp as usize) {
+                name = 'u';
+            } else {
+                name = 'm';
+            }
             trace_warn!("added new task");
             let memory = memory_controller
                 .alloc_stack(4)
                 .expect("can't allocate stack");
             scheduler::TASKS.lock().push(tasks::TaskData::new(
-                'm',
+                name,
                 0,
                 x86_64::VirtualAddress(memory.top()),
                 f,
@@ -213,7 +180,8 @@ use linked_list_allocator::LockedHeap;
 #[global_allocator]
 static HEAP_ALLOCATOR: LockedHeap = LockedHeap::empty();
 
-fn print_welcome() {
+/// prints a welcome message on the screen
+fn print_welcome(vendor_info: String, brand_info: String) {
     println!(" #     #                                                           ");
     println!(" #  #  # ###### #       ####   ####  #    # ######    #####  ####  ");
     println!(" #  #  # #      #      #    # #    # ##  ## #           #   #    # ");
@@ -229,12 +197,19 @@ fn print_welcome() {
     println!("                      #   #      #    #     #       #    ");
     println!("                      #    #     #    #     # #     #   ");
     println!("                      #     #    #    #######  #####     ");
-    active_sleep(1000);
+    println!("");
+    println!("");
+    println!("");
+    println!("{}", vendor_info);
+    println!("{}", brand_info);
+
+    active_sleep(3500);
     for x in 0..vga_buffer::BUFFER_HEIGHT / 4 {
         println!("");
     }
 }
 
+/// prints booting information to the screen
 fn print_booting() {
     println!(" #######                   #####");
     println!("    #    #    # ######    #     # #   #  ####  ##### ###### #    #");
