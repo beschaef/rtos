@@ -4,7 +4,7 @@ pub mod shell;
 
 use scheduler::RUNNING_TASK;
 use x86_64;
-use x86_64::instructions::rdtsc;
+use x86_64::instructions::{rdtsc, port};
 use alloc::string::{ToString,String};
 use raw_cpuid::CpuId;
 
@@ -186,4 +186,33 @@ pub fn msleep(ms: u64) {
         }
         int!(0x20);
     }
+}
+
+/// This sleep is not calling the scheduler.
+/// It is used for early sleeps, before any tasks oder scheduler are running.
+pub fn active_sleep(ms: u64) {
+    let one_sec = get_cpu_freq();
+    let time = one_sec * (ms / 1000); // (one_sec * ms / 1000) as i64; does'nt work!
+    let tsc = time + rdtsc();
+    let mut wait = rdtsc();
+    while wait < tsc {
+        wait = rdtsc();
+    }
+}
+
+/// Causes the system to reboot.
+/// Based on https://wiki.osdev.org/Reboot, ACPI reset command
+fn reboot() {
+    let mut good = 0x02;
+    while (good & 0x02 == 1){
+        unsafe { good = port::inb(0x64); }
+    }
+    unsafe {
+        port::outb(0x64, 0xFE);
+    }
+}
+
+/// Tests if a specific bit is set in a byte
+pub fn test_bit(byte: u8, bit: u8) -> bool {
+    byte & bit > 0
 }

@@ -1,6 +1,6 @@
 use alloc::Vec;
 use features::keyboard;
-use features::{msleep, shell::*};
+use features::{msleep, test_bit, shell::*};
 use scheduler::RUNNING_TASK;
 use spin::Mutex;
 use vga_buffer;
@@ -122,8 +122,7 @@ impl Piece {
                     vec![0, 0, 0, 0],
                     vec![0, 0, 0, 0],
                 ];
-                self.shape = vec![
-                    vec![0, 0, 0, 0],
+                self.shape = vec![vec![0, 0, 0, 0],
                     vec![1, 1, 1, 1],
                     vec![0, 0, 0, 0],
                     vec![0, 0, 0, 0],
@@ -585,6 +584,7 @@ pub fn uptime4() {
     }
 }
 
+#[allow(dead_code)]
 pub fn add_new_temp_clocks() {
     msleep(2000);
     trace_info!();
@@ -672,20 +672,20 @@ pub fn shell() {
 }
 
 /// Task of the htop
-/// prints aut all the active tasks and compute their utilization
+/// prints out all the active tasks and computes their utilization
 /// the utilization results from the active time divided by the active + passive time
 /// the process is looping permanently while the processes are calculated and printed there are no interrupts allowed to avoid concurrency problems
 pub fn htop() {
     trace_info!();
+    let mut percent_digits: Vec<u8>;
     while(true) {
         msleep(1000);
         unsafe {
             x86_64::instructions::interrupts::disable();
         }
         for (i, task) in TASKS.lock().iter().enumerate() {
-            //compute utilization
-            let utilization = task.time_active*100/(task.time_sleep + task.time_active);
-            let name =format!("task {}:{}% : {}/{} ", task.name, utilization,task.time_active/1000000,task.time_sleep/1000000+task.time_active/1000000);
+            let percent_digits = calc_float_percent_from_int(task.time_active, task.time_active + task.time_sleep, 4);
+            let name =format!("Task {}: {}{}.{}{}%", task.name, percent_digits[0], percent_digits[1], percent_digits[2], percent_digits[3]);
             //delete next line
             vga_buffer::write_at_background("                    ", i as u8 +1, 15, Color::Black, Color::Black);
             vga_buffer::write_at_background(&name, i as u8, 15, Color::Red, Color::Black);
@@ -700,6 +700,19 @@ pub fn htop() {
     finish_task();
 }
 
+fn calc_float_percent_from_int(nom: usize, denom: usize, digits: usize) -> Vec<usize> {
+    let mut percent_digits: Vec<usize> = Vec::new();
+    let mut int = nom*10_usize.pow(digits as u32)/denom;
+    let mut cnt = digits;
+    for i in 0..digits{
+        cnt -= 1;
+        let digit = int/10_usize.pow(cnt as u32);
+        percent_digits.push(digit);
+        int = int - (digit*10_usize.pow(cnt as u32));
+    }
+    percent_digits
+}
+
 /// moved keyboard handler from interrupts to own function
 /// keyboard handler as interrupt causes to PIC's deadlock problems.
 /// for now the function polls every 50ms.
@@ -712,10 +725,13 @@ pub fn task_keyboard() {
     msleep(1000);
     unsafe {
         loop {
-            while port::inb(0x64) & 0x1 == 1 {
-                let scan_code = port::inb(0x60);
-                if let Some(c) = keyboard::from_scancode(scan_code as usize) {
-                    SHELL.lock().parse_input(c);
+            let user_input = port::inb(0x64);
+            if test_bit(user_input, 0x1) { // general user input event
+                if !test_bit(user_input, 0x20) {  // if bit 5 is set -> mouse event
+                    let scan_code = port::inb(0x60);
+                    if let Some(c) = keyboard::from_scancode(scan_code as usize) {
+                        SHELL.lock().parse_input(c);
+                    }
                 }
             }
             msleep(50);

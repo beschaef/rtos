@@ -106,6 +106,7 @@ pub fn from_scancode(code: usize) -> Option<String> {
         } // arrow right
         0x1c => "ENTER", // Enter
         0x1d => "CTRL_LEFT",
+        0x0e => "BACKSPACE",
         _ => return None,
     };
 

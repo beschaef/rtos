@@ -4,6 +4,7 @@ use alloc::string::String;
 use tasks::{NEW_TASKS, tetris, TASK_STARTED};
 use x86_64::VirtualAddress;
 use trace::*;
+use features::reboot;
 
 pub struct Shell {
     separating_line_color: Color,
@@ -89,7 +90,7 @@ impl Shell {
         );
     }
 
-    pub fn print_input(&mut self, input: String) {
+    pub fn store_and_print_input(&mut self, input: String) {
         unsafe {
             if TASK_STARTED != true {
                 self.input.push(input.chars().next().unwrap());
@@ -120,12 +121,26 @@ impl Shell {
                 Color::Black,
             );
             self.parse_command();
+        } else if input == "BACKSPACE"{
+            if self.current_cursor_position.1 > self.default_cursor_position.1 {
+                self.input.pop();
+                write_at_background(
+                    " ",
+                    self.current_cursor_position.0,
+                    self.current_cursor_position.1,
+                    Color::Black,
+                    Color::Black,
+                );
+                self.current_cursor_position.1 -= 1;
+            }
         } else if input == "CTRL_LEFT" || input == "CTRL_RIGHT" {
             self.parse_ctrl_command = true;
         } else if self.parse_ctrl_command == true{
             self.parse_ctrl_command(input);
         } else {
-            self.print_input(input);
+            if self.current_cursor_position.1 < BUFFER_WIDTH as u8 - 1 {
+                self.store_and_print_input(input);
+            }
         }
     }
 
@@ -142,10 +157,13 @@ impl Shell {
             unsafe {TASK_STARTED = true;}
         } else if x == "" {
             ;
+        } else if x == "reboot"{
+            reboot();
         } else {
             if self.current_cursor_position.0 as usize >= BUFFER_HEIGHT - 1{
+                clear_row(BUFFER_HEIGHT- 1);
                 write_at_background(
-                    "unknown command                                                           ",
+                    "unknown command",
                     BUFFER_HEIGHT as u8 - 1,
                     0,
                     Color::Red,
@@ -153,25 +171,43 @@ impl Shell {
                 );
                 self.input_history.push("unknown command".to_string());
                 self.print_shift_history();
+                self.current_cursor_position.1 = self.default_cursor_position.1;
             } else {
                 self.current_cursor_position.0 += 1;
-                write_at_background(
-                    "unknown command                                                           ",
-                    self.current_cursor_position.0,
-                    0,
-                    Color::Red,
-                    Color::Black,
-                );
-                self.input_history.push("unknown command".to_string());
-                self.current_cursor_position.0 += 1;
-                self.current_cursor_position.1 = self.default_cursor_position.1;
-                let cursor_position_height = self.current_cursor_position.0;
-                self.print_prompt(cursor_position_height, 0);
+                if self.current_cursor_position.0 as usize >= BUFFER_HEIGHT - 1 {
+                    clear_row(BUFFER_HEIGHT- 1);
+                    write_at_background(
+                        "unknown command",
+                        BUFFER_HEIGHT as u8 - 1,
+                        0,
+                        Color::Red,
+                        Color::Black,
+                    );
+                    self.input_history.push("unknown command".to_string());
+                    self.print_shift_history();
+                    self.current_cursor_position.1 = self.default_cursor_position.1;
+                } else {
+                    clear_row(self.current_cursor_position.0 as usize);
+                    write_at_background(
+                        "unknown command",
+                        self.current_cursor_position.0,
+                        0,
+                        Color::Red,
+                        Color::Black,
+                    );
+                    self.input_history.push("unknown command".to_string());
+                    self.current_cursor_position.0 += 1;
+                    self.current_cursor_position.1 = self.default_cursor_position.1;
+                    let cursor_position_height = self.current_cursor_position.0;
+                    self.print_prompt(cursor_position_height, 0);
+                }
             }
 
         }
         self.input.clear();
     }
+
+
 
     fn parse_ctrl_command(&mut self, input: String){
         if input == "c" {
@@ -199,6 +235,7 @@ impl Shell {
     fn print_shift_history(&mut self){
         let mut cnt: usize = 1;
         for row in self.default_cursor_position.0 as usize..BUFFER_HEIGHT-1 {
+            clear_row(BUFFER_HEIGHT - 1 - cnt);
             let mut history_entry = &self.input_history[(self.input_history.len()-1) - (cnt - 1)].to_string();
             if history_entry == "unknown command" {
                 write_at_background(
@@ -221,13 +258,7 @@ impl Shell {
             cnt += 1;
         }
         /// clear last line and print a prompt
+        clear_row(BUFFER_HEIGHT - 1);
         self.print_prompt(BUFFER_HEIGHT as u8 - 1, 0);
-        write_at_background(
-            "                                                                    ",
-            BUFFER_HEIGHT as u8 - 1,
-            self.default_cursor_position.1,
-            Color::Black,
-            Color::Black,
-        );
     }
 }

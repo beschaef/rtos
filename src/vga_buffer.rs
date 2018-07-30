@@ -204,6 +204,10 @@ pub fn clear_screen() {
     WRITER.lock().clear_screen();
 }
 
+pub fn clear_row(row: usize) {
+    WRITER.lock().clear_row(row);
+}
+
 #[allow(dead_code)]
 pub fn read_at(row: usize, col: usize) -> u8 {
     WRITER.lock().read_byte(row, col)

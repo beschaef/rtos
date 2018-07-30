@@ -189,6 +189,11 @@ pub fn schedule(f: &mut ExceptionStackFrame) {
             } else {
                 TaskStatus::RUNNING
             };
+            let time_active_c = if (tsc as usize) < last_time_stamp_c {
+                0
+            } else{
+                tsc as usize - last_time_stamp_c
+            };
             let old = TaskData::copy(
                 name_c,
                 pid_c,
@@ -198,7 +203,7 @@ pub fn schedule(f: &mut ExceptionStackFrame) {
                 new_status,
                 sleep_ticks_c,
                 time_sleep_c,
-                tsc as usize - last_time_stamp_c,
+                time_active_c,
                 tsc as usize,
             );
             let mut position = 0;
