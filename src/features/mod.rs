@@ -197,7 +197,7 @@ pub fn active_sleep(ms: u64) {
 
 /// Causes the system to reboot.
 /// Based on https://wiki.osdev.org/Reboot, ACPI reset command
-fn reboot() {
+pub fn reboot() {
     let mut good = 0x02;
     while good & 0x02 == 1 {
         unsafe {

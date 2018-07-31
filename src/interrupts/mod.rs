@@ -6,6 +6,7 @@ use x86_64;
 use x86_64::structures::idt::{ExceptionStackFrame, Idt, PageFaultErrorCode};
 use x86_64::structures::tss::TaskStateSegment;
 use x86_64::VirtualAddress;
+use features::{reboot,active_sleep};
 
 mod gdt;
 
@@ -139,55 +140,63 @@ extern "x86-interrupt" fn double_fault_handler(
     _error_code: u64,
 ) {
     println!("\nEXCEPTION: DOUBLE FAULT\n{:#?}", stack_frame);
-    loop {}
+    fault_reboot();
 }
 
 extern "x86-interrupt" fn divide_by_zero(stack_frame: &mut ExceptionStackFrame) {
     println!("EXCEPTION: divide_by_zero\n{:#?}", stack_frame);
-    loop {}
+    fault_reboot();
 }
+
 extern "x86-interrupt" fn debug(stack_frame: &mut ExceptionStackFrame) {
     println!("EXCEPTION: debug\n{:#?}", stack_frame);
-    loop {}
+    fault_reboot();
 }
+
 extern "x86-interrupt" fn non_maskable_interrupt(stack_frame: &mut ExceptionStackFrame) {
     println!("EXCEPTION: non_maskable_interrupt\n{:#?}", stack_frame);
-    loop {}
+    fault_reboot();
 }
+
 extern "x86-interrupt" fn overflow(stack_frame: &mut ExceptionStackFrame) {
     println!("EXCEPTION: overflow\n{:#?}", stack_frame);
-    loop {}
+    fault_reboot();
 }
+
 extern "x86-interrupt" fn bound_range_exceeded(stack_frame: &mut ExceptionStackFrame) {
     println!("EXCEPTION: bound_range_exceeded\n{:#?}", stack_frame);
-    loop {}
+    fault_reboot();
 }
+
 extern "x86-interrupt" fn invalid_opcode(stack_frame: &mut ExceptionStackFrame) {
     println!("EXCEPTION: invalid_opcode\n{:#?}", stack_frame);
-    loop {}
+    fault_reboot();
 }
 
 extern "x86-interrupt" fn device_not_available(stack_frame: &mut ExceptionStackFrame) {
     println!("EXCEPTION: device_not_available\n{:#?}", stack_frame);
-    loop {}
+    fault_reboot();
 }
+
 extern "x86-interrupt" fn invalid_tss(stack_frame: &mut ExceptionStackFrame, _error_code: u64) {
     println!("EXCEPTION: invalid_tss\n{:#?}", stack_frame);
-    loop {}
+    fault_reboot();
 }
+
 extern "x86-interrupt" fn segment_not_present(
     stack_frame: &mut ExceptionStackFrame,
     _error_code: u64,
 ) {
     println!("EXCEPTION: segment_not_present\n{:#?}", stack_frame);
-    loop {}
+    fault_reboot();
 }
+
 extern "x86-interrupt" fn stack_segment_fault(
     stack_frame: &mut ExceptionStackFrame,
     _error_code: u64,
 ) {
     println!("EXCEPTION: stack_segment_fault\n{:#?}", stack_frame);
-    loop {}
+    fault_reboot();
 }
 
 extern "x86-interrupt" fn general_protection_fault(
@@ -195,43 +204,47 @@ extern "x86-interrupt" fn general_protection_fault(
     _error_code: u64,
 ) {
     println!("EXCEPTION: general_protection_fault\n{:#?}", stack_frame);
-    loop {}
+    fault_reboot();
 }
+
 extern "x86-interrupt" fn page_fault(
     stack_frame: &mut ExceptionStackFrame,
     _page_error_struct: PageFaultErrorCode,
 ) {
     println!("EXCEPTION: page_fault\n{:#?}", stack_frame);
-    loop {}
+    fault_reboot();
 }
+
 extern "x86-interrupt" fn x87_floating_point(stack_frame: &mut ExceptionStackFrame) {
     println!("EXCEPTION: x87_floating_point\n{:#?}", stack_frame);
-    loop {}
+    fault_reboot();
 }
 
 extern "x86-interrupt" fn virtualization(stack_frame: &mut ExceptionStackFrame) {
     println!("EXCEPTION: virtualization\n{:#?}", stack_frame);
-    loop {}
+    fault_reboot();
 }
 extern "x86-interrupt" fn security_exception(
     stack_frame: &mut ExceptionStackFrame,
     _error_code: u64,
 ) {
     println!("EXCEPTION: security_exception\n{:#?}", stack_frame);
-    loop {}
+    fault_reboot();
 }
+
 extern "x86-interrupt" fn simd_floating_point(stack_frame: &mut ExceptionStackFrame) {
     println!("EXCEPTION: simd_floating_point\n{:#?}", stack_frame);
-    loop {}
+    fault_reboot();
 }
+
 extern "x86-interrupt" fn machine_check(stack_frame: &mut ExceptionStackFrame) {
     println!("EXCEPTION: machine_check\n{:#?}", stack_frame);
-    loop {}
+    fault_reboot();
 }
 
 extern "x86-interrupt" fn alignment_check(stack_frame: &mut ExceptionStackFrame, _error_code: u64) {
     println!("EXCEPTION: alignment_check\n{:#?}", stack_frame);
-    loop {}
+    fault_reboot();
 }
 
 #[allow(dead_code)]
@@ -335,4 +348,23 @@ extern "x86-interrupt" fn handler_3(_stack_frame: &mut ExceptionStackFrame) {
 }
 extern "x86-interrupt" fn handler_4(_stack_frame: &mut ExceptionStackFrame) {
     println!("handler 4");
+}
+
+/// handles reboot if an fault occurs.
+/// system is rebooting after 5 seconds.
+fn fault_reboot() {
+    active_sleep(1000);
+    println!("System is rebooting in 5");
+    active_sleep(1000);
+    println!("                       4");
+    active_sleep(1000);
+    println!("                       3");
+    active_sleep(1000);
+    println!("                       2");
+    active_sleep(1000);
+    println!("                       1");
+    active_sleep(1000);
+    println!("                       0");
+    active_sleep(1000);
+    reboot();
 }
