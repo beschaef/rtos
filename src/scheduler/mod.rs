@@ -14,7 +14,7 @@ use x86_64::structures::idt::ExceptionStackFrame;
 /// global variable with informations about the current task.
 /// used, inter alia, to remember the sleep ticks for the scheduler.
 pub static mut RUNNING_TASK: Mutex<TaskData> = Mutex::new(TaskData {
-    name: 'x',
+    name: 'm',
     pid: 0,
     cpu_flags: 0,
     stack_pointer: x86_64::VirtualAddress(0),
@@ -180,7 +180,6 @@ pub fn schedule(f: &mut ExceptionStackFrame) {
             let pid_c = RUNNING_TASK.lock().pid;
             let sleep_ticks_c = RUNNING_TASK.lock().sleep_ticks;
             let time_sleep_c = RUNNING_TASK.lock().time_sleep;
-            let time_active_c = RUNNING_TASK.lock().time_active;
             let last_time_stamp_c = RUNNING_TASK.lock().last_time_stamp;
             // PID = 0 --> main function
             //let old = TaskData::new(cpuflags, stackpointer, instructionpointer, to_run.status);

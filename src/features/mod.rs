@@ -5,8 +5,7 @@ pub mod shell;
 use raw_cpuid::CpuId;
 use scheduler::RUNNING_TASK;
 use x86_64;
-use x86_64::instructions::{rdtsc, port};
-use alloc::string::{ToString,String};
+use x86_64::instructions::{port, rdtsc};
 
 /// global variable to store the cpu frequency
 static mut CPU_FREQ: u64 = 0;
@@ -26,11 +25,8 @@ pub fn calc_freq() -> u64 {
     let mut f0: u64 = 0;
     let mut r1: u64 = 0;
     let mut r2: u64 = 0;
-    let mut t0: u64 = 0;
-    let mut t1: u64 = 0;
-    let mut hi: u64 = 0;
-    let mut lo: u64 = 0;
-    let mut ticks: u64 = 0;
+    let mut t0: u64;
+    let mut t1: u64;
     let pit_freq = 1193182;
 
     trace_fatal!("pit_freq {:?}", pit_freq as u64);
@@ -47,29 +43,25 @@ pub fn calc_freq() -> u64 {
                     out 0x40, al"::::"intel", "volatile");
     }
 
-    for i in 0..5 {
+    for _i in 0..5 {
         t0 = read_pit();
         t1 = t0;
         trace_fatal!("t0 {:?}", t0);
         while (t0 - t1) < 20 {
             t1 = read_pit();
-            unsafe {
-                trace_fatal!("t1 {:?}", t1);
-                r1 = x86_64::instructions::rdtsc();
-            }
+            trace_fatal!("t1 {:?}", t1);
+            r1 = x86_64::instructions::rdtsc();
         }
         t0 = t1;
         while (t0 - t1) < 40 {
             t1 = read_pit();
             trace_fatal!("t1 {:?}", t1);
-            unsafe {
-                r2 = x86_64::instructions::rdtsc();
-            }
+            r2 = x86_64::instructions::rdtsc();
         }
         r0 += r2 - r1;
         trace_fatal!("r0 {:?}", r0);
 
-        f0 += (t0 - t1);
+        f0 += t0 - t1;
         trace_fatal!("f0 {:?}", f0);
     }
     trace_fatal!("freq {:?}", r0 / f0);
@@ -81,7 +73,7 @@ pub fn calc_freq() -> u64 {
 /// Currently there is no `rust-way` to get the remaining pit-ticks. Therefore the function use
 /// inline assembly to get the remaining pit-ticks.
 fn read_pit() -> u64 {
-    let mut reg: u64 = 0;
+    let reg: u64;
     unsafe {
         asm!("   and rax, 0
                  mov     al,0h
@@ -125,7 +117,7 @@ pub fn get_cpu_freq() -> u64 {
         if let Some(info) = cpuid.get_extended_function_info() {
             if let Some(brand) = info.processor_brand_string() {
                 trace_fatal!("tes{:?}", "t");
-                let mut first = 'a';
+                let mut first: char;
                 let mut second = 'a';
                 let mut third = 'a';
                 let mut found_freq = false;
@@ -205,10 +197,12 @@ pub fn active_sleep(ms: u64) {
 
 /// Causes the system to reboot.
 /// Based on https://wiki.osdev.org/Reboot, ACPI reset command
-fn reboot() {
+pub fn reboot() {
     let mut good = 0x02;
-    while (good & 0x02 == 1){
-        unsafe { good = port::inb(0x64); }
+    while good & 0x02 == 1 {
+        unsafe {
+            good = port::inb(0x64);
+        }
     }
     unsafe {
         port::outb(0x64, 0xFE);
