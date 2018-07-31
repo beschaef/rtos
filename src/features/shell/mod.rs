@@ -1,6 +1,6 @@
 use alloc::string::String;
 use alloc::{string::ToString, Vec};
-use features::reboot;
+use features::{reboot, shutdown};
 use tasks::{tetris, uptime_temp, NEW_TASKS, PIECE, TASK_STARTED};
 #[allow(unused_imports)]
 use trace::*;
@@ -29,7 +29,7 @@ impl Shell {
             input_history: Vec::new(),
             terminate_running_task: false,
             parse_ctrl_command: false,
-            active_screen: (40, 80, 0, 20),
+            active_screen: (30,80,0,20),
             running_task: "".to_string(),
             unkown_command_help:
                 "Unknown command. To see a list of possible commands, type `help`!".to_string(),
@@ -121,17 +121,21 @@ impl Shell {
                 Color::Black,
             );
             self.parse_command();
-        } else if input == "BACKSPACE" {
-            if self.current_cursor_position.1 > self.default_cursor_position.1 {
-                self.input.pop();
-                write_at_background(
-                    " ",
-                    self.current_cursor_position.0,
-                    self.current_cursor_position.1,
-                    Color::Black,
-                    Color::Black,
-                );
-                self.current_cursor_position.1 -= 1;
+        } else if input == "BACKSPACE"{
+            unsafe {
+                if TASK_STARTED != true {
+                    if self.current_cursor_position.1 > self.default_cursor_position.1 {
+                        self.input.pop();
+                        write_at_background(
+                            " ",
+                            self.current_cursor_position.0,
+                            self.current_cursor_position.1,
+                            Color::Black,
+                            Color::Black,
+                        );
+                        self.current_cursor_position.1 -= 1;
+                    }
+                }
             }
         } else if input == "CTRL_LEFT" || input == "CTRL_RIGHT" {
             self.parse_ctrl_command = true;
@@ -155,21 +159,18 @@ impl Shell {
     fn parse_command(&mut self) {
         let x = self.input.to_string();
         self.input_history.push(x.clone());
-        if x == "tetris" {
-            {
-                NEW_TASKS.lock().insert(0, VirtualAddress(tetris as usize));
-            }
-            unsafe {
-                TASK_STARTED = true;
-            }
+        if x == "tetris"{
+            {NEW_TASKS
+                .lock()
+                .insert(0, VirtualAddress(tetris as usize));}
+            unsafe { TASK_STARTED = true; }
             self.running_task = "tetris".to_string();
         } else if x == "htop" {
-            //{NEW_TASKS.lock().insert(0, VirtualAddress(htop as usize));}
-            unsafe {
-                TASK_STARTED = true;
-            }
+            ;
         } else if x == "help" {
             self.show_shell_manual();
+            unsafe { TASK_STARTED = true; }
+            self.running_task = "help".to_string();
         } else if x == "clock" {
             {
                 NEW_TASKS
@@ -188,6 +189,8 @@ impl Shell {
             ;
         } else if x == "reboot" {
             reboot();
+        } else if x == "shutdown" {
+            shutdown();
         } else {
             if self.current_cursor_position.0 as usize >= BUFFER_HEIGHT - 1 {
                 clear_row(BUFFER_HEIGHT - 1);
@@ -244,7 +247,13 @@ impl Shell {
         self.input.clear();
     }
 
-    fn show_shell_manual(&mut self) {
+
+    /// Prints a description of currently implemented shell commands.
+    /// The text is written quick and dirty to free areas on the screen.
+    /// A more professional solution would be to write a method which parses a desired textfile
+    /// (possibly containing control commands for formatting) and renders the text to a specified
+    /// area on the screen.
+    fn show_shell_manual(&mut self){
         write_at_background(
             "###### RTOS-SHELL - MANUAL ######",
             0,
@@ -253,61 +262,84 @@ impl Shell {
             Color::Black,
         );
         write_at_background(
-            "1. help > Shows a full list of possible shell",
+            "1. help     > Shows a full list of possible",
             2,
             35,
             Color::White,
-            Color::Black,
+            Color::Black
         );
-        write_at_background("          commands", 3, 35, Color::White, Color::Black);
         write_at_background(
-            "2. tetris > Starts a funky tetris game",
+            "              shell commands",
+            3,
+            35,
+            Color::White,
+            Color::Black
+        );
+        write_at_background(
+            "2. tetris   > Starts a funky tetris game",
             5,
             35,
             Color::White,
             Color::Black,
         );
         write_at_background(
-            "3. clock > Adds a temporary clock to the",
+            "3. clock    > Adds a temporary clock to the",
             7,
             35,
             Color::White,
             Color::Black,
         );
         write_at_background(
-            "           left of the screen",
+            "              left of the screen",
             8,
             35,
             Color::White,
             Color::Black,
         );
         write_at_background(
-            "4. reboot > Reboots the system",
+            "4. reboot   > Reboots the system",
             10,
             35,
             Color::White,
             Color::Black,
         );
         write_at_background(
-            "5. ctrl-c > Ends the current running",
+            "5. shutdown > Powers off the system",
             12,
             35,
             Color::White,
             Color::Black,
         );
         write_at_background(
-            "            task, also this man page",
-            13,
+            "6. ctrl-c   > Cancels the last command issued",
+            14,
             35,
             Color::White,
             Color::Black,
+        );
+        write_at_background(
+            "              from the shell and activates",
+            15,
+            35,
+            Color::White,
+            Color::Black,
+        );
+        write_at_background(
+            "              new input",
+            16,
+            35,
+            Color::White,
+            Color::Black
         );
     }
 
     fn parse_ctrl_command(&mut self, input: String) {
         if input == "c" {
-            self.terminate_running_task = true;
-            //trace_fatal!("self.terminate_running_task == {:?}", self.terminate_running_task);
+            if self.running_task == "help" {
+                self.reset_shell();
+            } else {
+                self.terminate_running_task = true;
+            }
             self.input.clear();
             self.running_task = "".to_string();
         }

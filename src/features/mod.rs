@@ -209,6 +209,10 @@ pub fn reboot() {
     }
 }
 
+pub fn shutdown() {
+    unsafe { port::outb(0xf4, 0x00) };
+}
+
 /// Tests if a specific bit is set in a byte
 pub fn test_bit(byte: u8, bit: u8) -> bool {
     byte & bit > 0
