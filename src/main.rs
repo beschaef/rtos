@@ -55,11 +55,11 @@ extern crate bit_field;
 extern crate cpuio;
 extern crate linked_list_allocator;
 
+use alloc::string::{String, ToString};
 use features::{active_sleep, get_cpu_freq, msleep};
 use os_bootinfo::BootInfo;
 use raw_cpuid::CpuId;
 use tasks::{tetris, uptime_temp};
-use alloc::string::{String, ToString};
 
 /// Used when a panic occour. The function prints the file and the line on the screen when a panic
 /// occur.
@@ -145,7 +145,7 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
     loop {
         msleep(200);
         if let Some(f) = tasks::NEW_TASKS.lock().pop() {
-            let mut name:char;
+            let mut name: char;
             if f == x86_64::VirtualAddress(tetris as usize) {
                 name = 't';
             } else if f == x86_64::VirtualAddress(uptime_temp as usize) {

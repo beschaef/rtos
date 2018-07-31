@@ -1,15 +1,15 @@
+use alloc::string::String;
 use alloc::Vec;
 use features::keyboard;
-use features::{msleep, test_bit, shell::*};
+use features::{msleep, shell::*, test_bit};
 use scheduler::RUNNING_TASK;
 use scheduler::TASKS;
 use spin::Mutex;
 use vga_buffer;
-use vga_buffer::{Color, clear_row};
+use vga_buffer::{clear_row, Color};
+use x86_64;
 use x86_64::instructions::rdtsc;
 use x86_64::VirtualAddress;
-use x86_64;
-use alloc::string::String;
 
 static mut PID_COUNTER: usize = 0;
 pub static mut TASK_STARTED: bool = false;
@@ -121,7 +121,8 @@ impl Piece {
                     vec![0, 0, 0, 0],
                     vec![0, 0, 0, 0],
                 ];
-                self.shape = vec![vec![0, 0, 0, 0],
+                self.shape = vec![
+                    vec![0, 0, 0, 0],
                     vec![1, 1, 1, 1],
                     vec![0, 0, 0, 0],
                     vec![0, 0, 0, 0],
@@ -131,7 +132,7 @@ impl Piece {
         }
     }
 
-    pub fn parse_control(&mut self, control: String){
+    pub fn parse_control(&mut self, control: String) {
         if control == "ARROW_UP" {
             self.rotate();
         } else if control == "ARROW_DOWN" {
@@ -327,9 +328,9 @@ impl Piece {
     pub fn advance_game(&mut self) -> bool {
         if !self.move_piece(0, 1) {
             self.lock_piece();
-            if BOARD.lock().cells[(ROW_OFFSET) as usize][(BOARD_WIDTH/2) as usize] != None {
+            if BOARD.lock().cells[(ROW_OFFSET) as usize][(BOARD_WIDTH / 2) as usize] != None {
                 vga_buffer::write_at_background(
-                    &format!("- GAME OVER - HS: {} ", unsafe{HIGHSCORE}),
+                    &format!("- GAME OVER - HS: {} ", unsafe { HIGHSCORE }),
                     ROW_OFFSET - 2,
                     COL_OFFSET - 1,
                     Color::Red,
@@ -711,16 +712,13 @@ pub fn tetris() {
             msleep(1000);
         }
     }
-
-
 }
 
 pub fn shell() {
     SHELL.lock().init_shell();
     loop {
         unsafe {
-            if TASK_STARTED != true
-             {
+            if TASK_STARTED != true {
                 SHELL.lock().cursor_on();
                 msleep(1000);
                 SHELL.lock().cursor_off();
@@ -728,7 +726,7 @@ pub fn shell() {
             }
         }
     }
-//    finish_task();
+    //    finish_task();
 }
 
 /// Task of the htop
@@ -743,8 +741,19 @@ pub fn htop() {
             x86_64::instructions::interrupts::disable();
         }
         for (i, task) in TASKS.lock().iter().enumerate() {
-            let percent_digits = calc_float_percent_from_int(task.time_active, task.time_active + task.time_sleep, 4);
-            let name =format!("Task {}: {}{}.{}{}%", task.name, percent_digits[0], percent_digits[1], percent_digits[2], percent_digits[3]);
+            let percent_digits = calc_float_percent_from_int(
+                task.time_active,
+                task.time_active + task.time_sleep,
+                4,
+            );
+            let name = format!(
+                "Task {}: {}{}.{}{}%",
+                task.name,
+                percent_digits[0],
+                percent_digits[1],
+                percent_digits[2],
+                percent_digits[3]
+            );
             //delete next line
             vga_buffer::write_at_background(
                 "                    ",
@@ -767,13 +776,13 @@ pub fn htop() {
 
 fn calc_float_percent_from_int(nom: usize, denom: usize, digits: usize) -> Vec<usize> {
     let mut percent_digits: Vec<usize> = Vec::new();
-    let mut int = nom*10_usize.pow(digits as u32)/denom;
+    let mut int = nom * 10_usize.pow(digits as u32) / denom;
     let mut cnt = digits;
-    for _i in 0..digits{
+    for _i in 0..digits {
         cnt -= 1;
-        let digit = int/10_usize.pow(cnt as u32);
+        let digit = int / 10_usize.pow(cnt as u32);
         percent_digits.push(digit);
-        int = int - (digit*10_usize.pow(cnt as u32));
+        int = int - (digit * 10_usize.pow(cnt as u32));
     }
     percent_digits
 }
@@ -791,8 +800,10 @@ pub fn task_keyboard() {
     unsafe {
         loop {
             let user_input = port::inb(0x64);
-            if test_bit(user_input, 0x1) { // general user input event
-                if !test_bit(user_input, 0x20) {  // if bit 5 is set -> mouse event
+            if test_bit(user_input, 0x1) {
+                // general user input event
+                if !test_bit(user_input, 0x20) {
+                    // if bit 5 is set -> mouse event
                     let scan_code = port::inb(0x60);
                     if let Some(c) = keyboard::from_scancode(scan_code as usize) {
                         SHELL.lock().parse_input(c);

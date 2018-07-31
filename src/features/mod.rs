@@ -5,7 +5,7 @@ pub mod shell;
 use raw_cpuid::CpuId;
 use scheduler::RUNNING_TASK;
 use x86_64;
-use x86_64::instructions::{rdtsc, port};
+use x86_64::instructions::{port, rdtsc};
 
 /// global variable to store the cpu frequency
 static mut CPU_FREQ: u64 = 0;
@@ -117,7 +117,7 @@ pub fn get_cpu_freq() -> u64 {
         if let Some(info) = cpuid.get_extended_function_info() {
             if let Some(brand) = info.processor_brand_string() {
                 trace_fatal!("tes{:?}", "t");
-                let mut first:char;
+                let mut first: char;
                 let mut second = 'a';
                 let mut third = 'a';
                 let mut found_freq = false;
@@ -200,7 +200,9 @@ pub fn active_sleep(ms: u64) {
 fn reboot() {
     let mut good = 0x02;
     while good & 0x02 == 1 {
-        unsafe { good = port::inb(0x64); }
+        unsafe {
+            good = port::inb(0x64);
+        }
     }
     unsafe {
         port::outb(0x64, 0xFE);
