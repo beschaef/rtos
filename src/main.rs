@@ -60,6 +60,7 @@ use features::{active_sleep, get_cpu_freq, msleep, disable_cursor};
 use os_bootinfo::BootInfo;
 use raw_cpuid::CpuId;
 use tasks::{tetris, uptime_temp};
+use interrupts::fault_reboot;
 
 /// Used when a panic occour. The function prints the file and the line on the screen when a panic
 /// occur.
@@ -73,6 +74,7 @@ pub extern "C" fn rust_begin_panic(
 ) -> ! {
     println!("\n\nPANIC in {} at line {}:", file, line);
     println!("    {}", msg);
+    fault_reboot();
     loop {}
 }
 
