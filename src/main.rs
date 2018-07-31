@@ -56,7 +56,7 @@ extern crate cpuio;
 extern crate linked_list_allocator;
 
 use alloc::string::{String, ToString};
-use features::{active_sleep, get_cpu_freq, msleep};
+use features::{active_sleep, get_cpu_freq, msleep, disable_cursor};
 use os_bootinfo::BootInfo;
 use raw_cpuid::CpuId;
 use tasks::{tetris, uptime_temp};
@@ -104,6 +104,8 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
             .lock()
             .init(HEAP_START, HEAP_START + HEAP_SIZE);
     }
+
+    disable_cursor();
 
     // initialize our IDT
     interrupts::init(&mut memory_controller);

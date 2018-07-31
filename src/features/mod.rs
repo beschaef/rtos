@@ -213,3 +213,12 @@ pub fn reboot() {
 pub fn test_bit(byte: u8, bit: u8) -> bool {
     byte & bit > 0
 }
+
+/// disables the cursor on vga_buffer
+/// More infos at https://wiki.osdev.org/Text_Mode_Cursor#Disabling_the_Cursor
+pub fn disable_cursor() {
+    unsafe {
+        port::outb(0x3D4, 0x0A);
+        port::outb(0x3D5, 20);
+    }
+}
