@@ -3,12 +3,11 @@ use alloc::{Vec, string::ToString};
 use alloc::string::String;
 use tasks::{NEW_TASKS, PIECE, TASK_STARTED, tetris, uptime_temp};
 use x86_64::VirtualAddress;
+#[allow(unused_imports)]
 use trace::*;
 use features::reboot;
 
 pub struct Shell {
-    separating_line_color: Color,
-    background_color: Color,
     default_cursor_position: (u8, u8),
     current_cursor_position: (u8, u8),
     input: String,
@@ -23,10 +22,8 @@ pub struct Shell {
 
 impl Shell {
     #[allow(dead_code)]
-    pub fn new(separating_line_color: Color, background_color: Color, current_cursor_position: (u8, u8)) -> Self {
+    pub fn new(current_cursor_position: (u8, u8)) -> Self {
         Shell {
-            separating_line_color,
-            background_color,
             default_cursor_position: current_cursor_position,
             current_cursor_position: current_cursor_position,
             input: "".to_string(),
@@ -115,7 +112,7 @@ impl Shell {
 
     pub fn parse_input(&mut self, input: String) {
         if input == "ENTER" {
-            /// delete blinking cursor in current line
+            // delete blinking cursor in current line
             write_at_background(
                 " ",
                 self.current_cursor_position.0,
@@ -334,7 +331,7 @@ impl Shell {
 
     fn print_shift_history(&mut self){
         let mut cnt: usize = 1;
-        for row in self.default_cursor_position.0 as usize..BUFFER_HEIGHT-1 {
+        for _row in self.default_cursor_position.0 as usize..BUFFER_HEIGHT-1 {
             clear_row(BUFFER_HEIGHT - 1 - cnt);
             let mut history_entry = &self.input_history[(self.input_history.len()-1) - (cnt - 1)].to_string();
             if history_entry == &self.unkown_command_help {
@@ -357,7 +354,7 @@ impl Shell {
             }
             cnt += 1;
         }
-        /// clear last line and print a prompt
+        // clear last line and print a prompt
         clear_row(BUFFER_HEIGHT - 1);
         self.print_prompt(BUFFER_HEIGHT as u8 - 1, 0);
     }

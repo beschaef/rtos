@@ -9,7 +9,7 @@ use vga_buffer::{Color, clear_row};
 use x86_64::instructions::rdtsc;
 use x86_64::VirtualAddress;
 use x86_64;
-use alloc::string::{String, ToString};
+use alloc::string::String;
 
 static mut PID_COUNTER: usize = 0;
 pub static mut TASK_STARTED: bool = false;
@@ -48,7 +48,7 @@ lazy_static! {
     pub static ref NEW_TASKS: Mutex<Vec<VirtualAddress>> = Mutex::new(vec![]);
 
 /// global shell object
-    pub static ref SHELL: Mutex<Shell> = Mutex::new(Shell::new(Color::DarkGray, Color::Cyan, (21, 11)));
+    pub static ref SHELL: Mutex<Shell> = Mutex::new(Shell::new((21, 11)));
 }
 
 /// Struct of the current falling piece
@@ -635,7 +635,6 @@ pub fn uptime4() {
 pub fn add_new_temp_clocks() {
     msleep(2000);
     trace_info!();
-    let mut r = 0;
     loop {
         msleep(1000);
         NEW_TASKS
@@ -718,7 +717,7 @@ pub fn shell() {
             }
         }
     }
-    finish_task();
+//    finish_task();
 }
 
 /// Task of the htop
@@ -727,8 +726,7 @@ pub fn shell() {
 /// the process is looping permanently while the processes are calculated and printed there are no interrupts allowed to avoid concurrency problems
 pub fn htop() {
     trace_info!();
-    let mut percent_digits: Vec<u8>;
-    while(true) {
+    loop {
         msleep(1000);
         unsafe {
             x86_64::instructions::interrupts::disable();
@@ -752,15 +750,15 @@ pub fn htop() {
         }
     }
 
-    // end the task
-    finish_task();
+    // end the task, finish_task is unreachable
+    // finish_task();
 }
 
 fn calc_float_percent_from_int(nom: usize, denom: usize, digits: usize) -> Vec<usize> {
     let mut percent_digits: Vec<usize> = Vec::new();
     let mut int = nom*10_usize.pow(digits as u32)/denom;
     let mut cnt = digits;
-    for i in 0..digits{
+    for _i in 0..digits{
         cnt -= 1;
         let digit = int/10_usize.pow(cnt as u32);
         percent_digits.push(digit);

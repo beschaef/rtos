@@ -58,7 +58,6 @@ extern crate linked_list_allocator;
 use features::{active_sleep, get_cpu_freq, msleep};
 use os_bootinfo::BootInfo;
 use raw_cpuid::CpuId;
-use vga_buffer::Color;
 use tasks::{tetris, uptime_temp};
 use alloc::string::{String, ToString};
 
@@ -146,7 +145,7 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
     loop {
         msleep(200);
         if let Some(f) = tasks::NEW_TASKS.lock().pop() {
-            let mut name = ' ';
+            let mut name:char;
             if f == x86_64::VirtualAddress(tetris as usize) {
                 name = 't';
             } else if f == x86_64::VirtualAddress(uptime_temp as usize) {
@@ -204,7 +203,7 @@ fn print_welcome(vendor_info: String, brand_info: String) {
     println!("{}", brand_info);
 
     active_sleep(3500);
-    for x in 0..vga_buffer::BUFFER_HEIGHT / 4 {
+    for _x in 0..vga_buffer::BUFFER_HEIGHT / 4 {
         println!("");
     }
 }
@@ -235,7 +234,7 @@ fn print_booting() {
     println!("#      #      #      #    # #    # #         ##  ## #    # #   #");
     println!("#      ###### ###### #    #  ####  ######    #    # #    # #   #");
     active_sleep(1000);
-    for x in 0..vga_buffer::BUFFER_HEIGHT {
+    for _x in 0..vga_buffer::BUFFER_HEIGHT {
         println!("");
     }
 }

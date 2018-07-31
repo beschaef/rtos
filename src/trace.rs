@@ -108,18 +108,21 @@ pub fn trace_info_without_interrupts(level: &str, fn_name: &str, info_text: &str
 #[macro_export]
 macro_rules! trace_debug {
     () => {
+        #[allow(unused_imports)]
         use trace::*;
         if unsafe{TRACE_LEVEL} <= TraceLevel::Debug {
             (simple_trace!("Debug",""))
         }
     };
     ($fmt:expr) => {
+        #[allow(unused_imports)]
         use trace::*;
         if unsafe{TRACE_LEVEL} <= TraceLevel::Debug {
             (simple_trace!("Debug",$fmt))
         }
     };
     ($fmt:expr, $($arg:tt)*) => {
+        #[allow(unused_imports)]
         use trace::*;
         if unsafe{TRACE_LEVEL} <= TraceLevel::Debug {
             (simple_trace!("Debug",$fmt, $($arg)*))
@@ -143,18 +146,21 @@ macro_rules! trace_debug {
 #[macro_export]
 macro_rules! trace_info {
     () => {
+        #[allow(unused_imports)]
         use trace::*;
         if unsafe{TRACE_LEVEL} <= TraceLevel::Info {
             (simple_trace!("Info",""))
         }
     };
     ($fmt:expr) => {
+        #[allow(unused_imports)]
         use trace::*;
         if unsafe{TRACE_LEVEL} <= TraceLevel::Info {
             (simple_trace!("Info",$fmt))
         }
     };
     ($fmt:expr, $($arg:tt)*) => {
+        #[allow(unused_imports)]
         use trace::*;
         if unsafe{TRACE_LEVEL} <= TraceLevel::Info {
             (simple_trace!("Info",$fmt, $($arg)*))
@@ -178,17 +184,21 @@ macro_rules! trace_info {
 #[macro_export]
 macro_rules! trace_warn {
     () => {
+        #[allow(unused_imports)]
         use trace::*;
         if unsafe{TRACE_LEVEL} <= TraceLevel::Warn {
             (simple_trace!("Warn",""))
         }
     };
     ($fmt:expr) => {
+        #[allow(unused_imports)]
+        use trace::*;
         if unsafe{TRACE_LEVEL} <= TraceLevel::Warn {
             (simple_trace!("Warn",$fmt))
         }
     };
     ($fmt:expr, $($arg:tt)*) => {
+        #[allow(unused_imports)]
         use trace::*;
         if unsafe{TRACE_LEVEL} <= TraceLevel::Warn {
             (simple_trace!("Warn",$fmt, $($arg)*))
@@ -212,17 +222,21 @@ macro_rules! trace_warn {
 #[macro_export]
 macro_rules! trace_error {
     () => {
+        #[allow(unused_imports)]
         use trace::*;
         if unsafe{TRACE_LEVEL} <= TraceLevel::Error {
             (simple_trace!("Error",""))
         }
     };
     ($fmt:expr) => {
+        #[allow(unused_imports)]
+        use trace::*;
         if unsafe{TRACE_LEVEL} <= TraceLevel::Error {
             (simple_trace!("Error",$fmt))
         }
     };
     ($fmt:expr, $($arg:tt)*) => {
+        #[allow(unused_imports)]
         use trace::*;
         if unsafe{TRACE_LEVEL} <= TraceLevel::Error {
             (simple_trace!("Error",$fmt, $($arg)*))
@@ -246,17 +260,21 @@ macro_rules! trace_error {
 #[macro_export]
 macro_rules! trace_fatal {
     () => {
+        #[allow(unused_imports)]
         use trace::*;
         if unsafe{TRACE_LEVEL} <= TraceLevel::Fatal {
             (simple_trace!("Fatal",""))
         }
     };
     ($fmt:expr) => {
+        #[allow(unused_imports)]
+        use trace::*;
         if unsafe{TRACE_LEVEL} <= TraceLevel::Fatal {
             (simple_trace!("Fatal",$fmt))
         }
     };
     ($fmt:expr, $($arg:tt)*) => {
+        #[allow(unused_imports)]
         use trace::*;
         if unsafe{TRACE_LEVEL} <= TraceLevel::Fatal {
             (simple_trace!("Fatal",$fmt, $($arg)*))
