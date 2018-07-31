@@ -706,6 +706,7 @@ pub fn tetris() {
 }
 
 pub fn shell() {
+    msleep(1500);
     SHELL.lock().init_shell();
     loop {
         unsafe {
