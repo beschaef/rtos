@@ -352,7 +352,7 @@ extern "x86-interrupt" fn handler_4(_stack_frame: &mut ExceptionStackFrame) {
 
 /// handles reboot if an fault occurs.
 /// system is rebooting after 5 seconds.
-fn fault_reboot() {
+pub fn fault_reboot() {
     active_sleep(1000);
     println!("System is rebooting in 5");
     active_sleep(1000);
