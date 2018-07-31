@@ -14,7 +14,7 @@ use x86_64::structures::idt::ExceptionStackFrame;
 /// global variable with informations about the current task.
 /// used, inter alia, to remember the sleep ticks for the scheduler.
 pub static mut RUNNING_TASK: Mutex<TaskData> = Mutex::new(TaskData {
-    name: 'x',
+    name: 'm',
     pid: 0,
     cpu_flags: 0,
     stack_pointer: x86_64::VirtualAddress(0),
