@@ -6,7 +6,7 @@ use scheduler::RUNNING_TASK;
 use scheduler::TASKS;
 use spin::Mutex;
 use vga_buffer;
-use vga_buffer::{clear_row, Color};
+use vga_buffer::Color;
 use x86_64;
 use x86_64::instructions::rdtsc;
 use x86_64::VirtualAddress;
@@ -81,7 +81,7 @@ impl Piece {
         // generate random number between 0 and 6
         let i = rdtsc() % 7;
 
-        // different pice shapes
+        // different piece shapes
         match i {
             0 => {
                 self.color = Color::Green;
@@ -336,7 +336,6 @@ impl Piece {
                     Color::Red,
                     Color::Black,
                 );
-                finish_task();
                 return false;
             }
             self.new_random_piece();
@@ -380,7 +379,8 @@ pub struct Board {
 
 impl Board {
     ///Prints the boarders of the playing field
-    pub fn render_board(&self) {
+    pub fn render_board(&mut self) {
+        self.cells = [[None; BOARD_WIDTH as usize]; BOARD_HEIGHT as usize];
         for y in 0..BOARD_HEIGHT {
             vga_buffer::write_at_background(
                 "|",
@@ -663,7 +663,7 @@ pub fn uptime_temp() {
     msleep(1000);
     trace_info!();
     let mut r = 0;
-    for _i in 0..4 {
+    for _i in 0..10 {
         //trace!("loop uptime1");
 
         r = r + 1;
@@ -678,7 +678,7 @@ pub fn uptime_temp() {
         trace_debug!("Uptime_temp written {:?}", text);
         msleep(1000);
     }
-    clear_row(10);
+    vga_buffer::write_at_background("          ", 10, 0, Color::Black, Color::Black);
     finish_task();
 }
 
@@ -712,6 +712,9 @@ pub fn tetris() {
             msleep(1000);
         }
     }
+    msleep(2000);
+    SHELL.lock().reset_shell();
+    finish_task();
 }
 
 pub fn shell() {

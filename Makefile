@@ -19,8 +19,7 @@ fmt:
 	cargo fmt
 
 run:
-
-	@qemu-system-x86_64 -drive format=raw,file=bootimage.bin -machine q35,iommu=on -smp 4 -d cpu_reset -d guest_errors -m 1024M -cpu host -enable-kvm -serial file:logs/TRACE_$(TIME)
+	@qemu-system-x86_64 -drive format=raw,file=bootimage.bin -machine q35,iommu=on -smp 4 -d cpu_reset -d guest_errors -m 1024M -cpu host -enable-kvm -serial file:logs/TRACE_$(TIME) -device isa-debug-exit,iobase=0xf4,iosize=0x04
 
 debug:
 	@qemu-system-x86_64 -drive format=raw,file=bootimage.bin -s -S -m 1024M -enable-kvm -serial file:logs/TRACE_$(TIME)

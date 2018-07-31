@@ -132,8 +132,8 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
         }
     }
 
-    //print_welcome(vendor_info, brand_info);
-    //print_booting();
+    print_welcome(vendor_info, brand_info);
+    print_booting();
 
     interrupts::init_timer();
     msleep(1000);

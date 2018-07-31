@@ -1,6 +1,6 @@
 use alloc::string::String;
 use alloc::{string::ToString, Vec};
-use features::reboot;
+use features::{reboot, shutdown};
 use tasks::{tetris, uptime_temp, NEW_TASKS, PIECE, TASK_STARTED};
 #[allow(unused_imports)]
 use trace::*;
@@ -189,6 +189,8 @@ impl Shell {
             ;
         } else if x == "reboot" {
             reboot();
+        } else if x == "shutdown" {
+            shutdown();
         } else {
             if self.current_cursor_position.0 as usize >= BUFFER_HEIGHT - 1 {
                 clear_row(BUFFER_HEIGHT - 1);
@@ -260,64 +262,71 @@ impl Shell {
             Color::Black,
         );
         write_at_background(
-            "1. help   > Shows a full list of possible",
+            "1. help     > Shows a full list of possible",
             2,
             35,
             Color::White,
             Color::Black
         );
         write_at_background(
-            "            shell commands",
+            "              shell commands",
             3,
             35,
             Color::White,
             Color::Black
         );
         write_at_background(
-            "2. tetris > Starts a funky tetris game",
+            "2. tetris   > Starts a funky tetris game",
             5,
             35,
             Color::White,
             Color::Black,
         );
         write_at_background(
-            "3. clock  > Adds a temporary clock to the",
+            "3. clock    > Adds a temporary clock to the",
             7,
             35,
             Color::White,
             Color::Black,
         );
         write_at_background(
-            "            left of the screen",
+            "              left of the screen",
             8,
             35,
             Color::White,
             Color::Black,
         );
         write_at_background(
-            "4. reboot > Reboots the system",
+            "4. reboot   > Reboots the system",
             10,
             35,
             Color::White,
             Color::Black,
         );
         write_at_background(
-            "5. ctrl-c > Cancels the last command issued",
+            "5. shutdown > Powers off the system",
             12,
             35,
             Color::White,
             Color::Black,
         );
         write_at_background(
-            "            from the shell and activates new",
-            13,
+            "6. ctrl-c   > Cancels the last command issued",
+            14,
             35,
             Color::White,
             Color::Black,
         );
         write_at_background(
-            "            input",
-            14,
+            "              from the shell and activates",
+            15,
+            35,
+            Color::White,
+            Color::Black,
+        );
+        write_at_background(
+            "              new input",
+            16,
             35,
             Color::White,
             Color::Black
