@@ -327,6 +327,17 @@ impl Piece {
     pub fn advance_game(&mut self) -> bool {
         if !self.move_piece(0, 1) {
             self.lock_piece();
+            if BOARD.lock().cells[(ROW_OFFSET) as usize][(BOARD_WIDTH/2) as usize] != None {
+                vga_buffer::write_at_background(
+                    &format!("- GAME OVER - HS: {} ", unsafe{HIGHSCORE}),
+                    ROW_OFFSET - 2,
+                    COL_OFFSET - 1,
+                    Color::Red,
+                    Color::Black,
+                );
+                finish_task();
+                return false;
+            }
             self.new_random_piece();
             if self.collision_test() {
                 return false;
