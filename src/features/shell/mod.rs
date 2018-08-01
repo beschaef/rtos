@@ -1,3 +1,20 @@
+//! This module provides a basic shell / terminal to enable user interaction with the system.
+//! It supports a minimal set of commands and is easily enhancable to implement new commands.
+//! Currently supported commands are:
+//!
+//!     1. "help"     -> Displays a man page which shows a list of supported commands.
+//!     2. "tetris"   -> Starts a self developed version of the ancient tetris
+//!     3. "clock"    -> Adds a temporary clock which counts up to a specific amount of seconds
+//!     4. "reboot"   -> Reboots the system
+//!     5. "shutdown" -> Shuts down the system
+//!     6. "strg + c" -> Terminates the current running task which was issued from the shell
+//!
+//! A new Shell can be initialized with a custom number of lines, which is determined by passing
+//! the initial cursor position (altogether 25 rows are available on the screen).
+//! ATTENTION: Currently all screen output not coming from the shell is not adapted to the area
+//! which is occupied by the shell, which means that there can be overlaps (depended on the initial
+//! cursor position).
+
 use alloc::string::String;
 use alloc::{string::ToString, Vec};
 use features::{reboot, shutdown};
@@ -8,18 +25,31 @@ use vga_buffer::*;
 use x86_64::VirtualAddress;
 
 pub struct Shell {
+    /// Specifies the initial cursor position (row, col)
     default_cursor_position: (u8, u8),
+    /// Specifies the current cursor position (row, col). Values change during runtime
     current_cursor_position: (u8, u8),
+    /// Stores the user input from the shell
     input: String,
+    /// Stores the commands issued from the shell
     input_history: Vec<String>,
+    /// If set to true, the currently running task terminates itself and is not scheduled anymore
     pub terminate_running_task: bool,
+    /// If set to true, the shell checks whether ctrl + c was pressed
     parse_ctrl_command: bool,
+    /// Contains the running task (started by the shell) as string
     running_task: String,
+    /// Defines the screen area to which the content of tasks started by the shell is displayed
     active_screen: (u8, u8, u8, u8),
+    /// Text, which is displayed when the user issues an unsupported command
     unkown_command_help: String,
 }
 
 impl Shell {
+    /// Creates a new shell and sets some default default values.
+    /// # Arguments
+    /// * `current_cursor_position` - ((u8, u8)) Specifies the initial cursor position (row, col)
+    /// and therewith defines the number of lines occupied by the shell
     #[allow(dead_code)]
     pub fn new(current_cursor_position: (u8, u8)) -> Self {
         Shell {
@@ -36,12 +66,16 @@ impl Shell {
         }
     }
 
+    /// Initializes the shell -> Prints the line which seperates the active screen from the shell
+    /// area and prints the prompt to the according position.
     pub fn init_shell(&mut self) {
         self.print_separating_line();
         let cursor_position_height = self.current_cursor_position.0;
         self.print_prompt(cursor_position_height, 0);
     }
 
+    /// Clears the active screen area (sets it to black fore- and background-color). Normally used
+    /// when a task issued by the shell is terminated.
     pub fn clear_active_screen(&mut self) {
         for col in self.active_screen.0..self.active_screen.1 {
             for row in self.active_screen.2..self.active_screen.3 {
@@ -50,6 +84,7 @@ impl Shell {
         }
     }
 
+    /// Prints the line which seperates the active screen from the shell area
     pub fn print_separating_line(&mut self) {
         write_at_background(
             "--------------------------------------------------------------------------------",
@@ -60,6 +95,10 @@ impl Shell {
         );
     }
 
+    /// Prints the prompt to a desired position.
+    /// # Arguments
+    /// * `cursor_position_height` - (u8) Specifies the desired vertical position
+    /// * `cursor_position_width` - (u8) Specifies the desired horizontal position
     pub fn print_prompt(&mut self, cursor_position_height: u8, cursor_position_width: u8) {
         write_at_background(
             "bob@rtos > ",
@@ -70,6 +109,8 @@ impl Shell {
         );
     }
 
+    /// Lets the cursor appear on the screen.
+    /// Used together with cursor_off() to let the cursor blink.
     pub fn cursor_on(&mut self) {
         write_at_background(
             "_",
@@ -80,6 +121,8 @@ impl Shell {
         );
     }
 
+    /// Lets the cursor disappear from the screen.
+    /// Used together with cursor_on() to let the cursor blink.
     pub fn cursor_off(&mut self) {
         write_at_background(
             " ",
@@ -90,6 +133,15 @@ impl Shell {
         );
     }
 
+    /// Stores and prints user input back to the screen.
+    /// Every time the user presses a key on the keyboard, a corresponding string is passed to this
+    /// function. If currently no other task is running, the input is pushed to the string which
+    /// contains all of the user input of the current line. Otherwise user input is disabled, which
+    /// means that no user input is stored. After saving the input it is printed on the screen.
+    /// Finally the cursor is shifted to the next input position.
+    /// # Arguments
+    /// * `input` - (String) Symbol corresponding to the pressed key on the keyboard, casted as
+    /// string
     pub fn store_and_print_input(&mut self, input: String) {
         unsafe {
             if TASK_STARTED != true {
@@ -110,6 +162,7 @@ impl Shell {
         }
     }
 
+    /// Parses
     pub fn parse_input(&mut self, input: String) {
         if input == "ENTER" {
             // delete blinking cursor in current line
@@ -249,10 +302,10 @@ impl Shell {
 
 
     /// Prints a description of currently implemented shell commands.
-    /// The text is written quick and dirty to free areas on the screen.
+    /// The text is written quick and dirty to the active screen area.
     /// A more professional solution would be to write a method which parses a desired textfile
     /// (possibly containing control commands for formatting) and renders the text to a specified
-    /// area on the screen.
+    /// area on the screen. Due to lack of time this was not realized any more.
     fn show_shell_manual(&mut self){
         write_at_background(
             "###### RTOS-SHELL - MANUAL ######",
@@ -335,13 +388,15 @@ impl Shell {
 
     fn parse_ctrl_command(&mut self, input: String) {
         if input == "c" {
-            if self.running_task == "help" {
-                self.reset_shell();
-            } else {
-                self.terminate_running_task = true;
+            if unsafe { TASK_STARTED } {
+                if self.running_task == "help" {
+                    self.reset_shell();
+                } else {
+                    self.terminate_running_task = true;
+                }
+                self.input.clear();
+                self.running_task = "".to_string();
             }
-            self.input.clear();
-            self.running_task = "".to_string();
         }
         self.parse_ctrl_command = false;
     }
