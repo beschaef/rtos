@@ -185,7 +185,8 @@ pub fn write_at(str: &str, row: u8, col: u8, color: Color) {
     write_at_background(str, row, col, color, Color::Black);
 }
 
-/// writes a string on the vga buffer
+/// writes a string on the vga buffer.
+/// This function disables interrupts while printing to prevent vgabuffer errors and bugs.
 ///
 /// # Arguments
 ///  * str - which string should be written to vga buffer
