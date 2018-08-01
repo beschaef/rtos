@@ -12,7 +12,7 @@
 //! A new Shell can be initialized with a custom number of lines, which is determined by passing
 //! the initial cursor position (altogether 25 rows are available on the screen).
 //! ATTENTION: Currently all screen output not coming from the shell is not adapted to the area
-//! which is occupied by the shell, which means that there can be overlaps (depended on the initial
+//! which is occupied by the shell, which means that there can be overlaps (dependent on the initial
 //! cursor position).
 
 use alloc::string::String;
@@ -84,7 +84,8 @@ impl Shell {
         }
     }
 
-    /// Prints the line which seperates the active screen from the shell area
+
+    /// Prints the line which seperates the active screen from the shell area.
     pub fn print_separating_line(&mut self) {
         write_at_background(
             "--------------------------------------------------------------------------------",
@@ -133,9 +134,8 @@ impl Shell {
         );
     }
 
-    /// Stores and prints user input back to the screen.
-    /// Every time the user presses a key on the keyboard, a corresponding string is passed to this
-    /// function. If currently no other task is running, the input is pushed to the string which
+    /// Receives preprocessed user input from `parse_input()`.
+    /// If currently no other task is running, the input is pushed to the string which
     /// contains all of the user input of the current line. Otherwise user input is disabled, which
     /// means that no user input is stored. After saving the input it is printed on the screen.
     /// Finally the cursor is shifted to the next input position.
@@ -162,7 +162,23 @@ impl Shell {
         }
     }
 
-    /// Parses
+    /// Entry point of user input to the shell module.
+    /// Every time the user presses a key on the keyboard, a corresponding string is passed to this
+    /// function, which then handles possible cases:
+    ///
+    /// 1. *ENTER*     -> The blinking cursor is removed from the shell (to signalize that
+    /// user input is disabled) and parse_command() is called.
+    /// 2. *BACKSPACE* -> If no task (started by the shell) is running and if the cursor is in
+    /// a valid position, the last input char is removed from the input string and the cursor is
+    /// shifted to the left.
+    /// 3. *CTRL*      -> An internal flag is set to signalize that a ctrl-key was pressed.
+    /// 4. *ARROW*     -> If tetris is running, a string corresponding to the pressed arrow key is
+    /// passed to the control parser of tetris.
+    /// 5. *DEFAULT*   -> If none of the previous cases applies, the input is not interpreted as
+    /// command but as *normal* input and is passed to `store_and_print_input()`.
+    /// # Arguments
+    /// * `input` - (String) Symbol corresponding to the pressed key on the keyboard, casted as
+    /// string
     pub fn parse_input(&mut self, input: String) {
         if input == "ENTER" {
             // delete blinking cursor in current line
@@ -209,6 +225,12 @@ impl Shell {
         }
     }
 
+    /// Called by `parse_input()`.
+    /// If neccessary (e.g. in case of tetris, clock), the function pointer of the task which should
+    /// be started is pushed to the vector NEW_TASKS, which stores new tasksto be started by the shell or other tasks.
+    /// The main task starts new task from this vector.
+    /// In case of *reboot* or *shutdown* the corresponding function in the *features* crate is called.
+    /// If an unsupported command is issued, an appropriate warning is displayed.
     fn parse_command(&mut self) {
         let x = self.input.to_string();
         self.input_history.push(x.clone());
@@ -389,6 +411,12 @@ impl Shell {
         );
     }
 
+    /// Called by `parse_input()` after *ctrl* and another key was pressed.
+    /// If the other key was *c* and a task started by the shell is running, this method sets the
+    /// `terminate_running_task` flag to inform the scheduler that the task can be terminated.
+    /// Then the input string is cleared and the shell is resetted to some default values.
+    /// # Arguments
+    /// * `input` - (String) Symbol corresponding to the pressed key on the keyboard, casted as string
     fn parse_ctrl_command(&mut self, input: String) {
         if input == "c" {
             if unsafe { TASK_STARTED } {
@@ -404,6 +432,10 @@ impl Shell {
         self.parse_ctrl_command = false;
     }
 
+    /// Sets the shell variables to some default values.
+    /// For example the  `terminate_running_task` flag is cleared, the active screen area is cleared.
+    /// If the last line is reached, the function `print_shift_history()` is called to shift the previous inputs
+    /// up.
     pub fn reset_shell(&mut self) {
         self.terminate_running_task = false;
         self.clear_active_screen();
@@ -420,6 +452,9 @@ impl Shell {
         }
     }
 
+
+    /// Called by several shell functions to shift the previous inputs up if the last line of the shell
+    /// was reached.
     fn print_shift_history(&mut self) {
         let mut cnt: usize = 1;
         for _row in self.default_cursor_position.0 as usize..BUFFER_HEIGHT - 1 {

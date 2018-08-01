@@ -79,8 +79,8 @@ pub extern "C" fn rust_begin_panic(
 }
 
 /// This is the function for the entry point of the system.
-/// Here gets the system initialized.
-/// For a system with multiple tasks with a scheduler it is important have a memory_controller to
+/// Here the system gets initialized.
+/// For a system with multiple tasks with a scheduler it is important to have a memory_controller to
 /// allocate stack for each task. To handle strings, Vec, etc. a heap allocator is needed. This
 /// system is using a linked list heap alloctor. Actually its only possible to allocate heap and stack.
 /// So it is important to reuse as much Variables as possible.
