@@ -1,3 +1,4 @@
+//! stores the keyboard decode function
 use alloc::string::String;
 use alloc::string::ToString;
 
