@@ -1,3 +1,4 @@
+use features::{active_sleep, reboot};
 use memory::MemoryController;
 use pic::ChainedPics;
 use scheduler::schedule;
@@ -6,7 +7,6 @@ use x86_64;
 use x86_64::structures::idt::{ExceptionStackFrame, Idt, PageFaultErrorCode};
 use x86_64::structures::tss::TaskStateSegment;
 use x86_64::VirtualAddress;
-use features::{reboot,active_sleep};
 
 mod gdt;
 

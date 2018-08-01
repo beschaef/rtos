@@ -56,11 +56,11 @@ extern crate cpuio;
 extern crate linked_list_allocator;
 
 use alloc::string::{String, ToString};
-use features::{active_sleep, get_cpu_freq, msleep, disable_cursor};
+use features::{active_sleep, disable_cursor, get_cpu_freq, msleep};
+use interrupts::fault_reboot;
 use os_bootinfo::BootInfo;
 use raw_cpuid::CpuId;
 use tasks::{tetris, uptime_temp};
-use interrupts::fault_reboot;
 
 /// Used when a panic occour. The function prints the file and the line on the screen when a panic
 /// occur.

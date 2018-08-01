@@ -29,7 +29,7 @@ impl Shell {
             input_history: Vec::new(),
             terminate_running_task: false,
             parse_ctrl_command: false,
-            active_screen: (30,80,0,20),
+            active_screen: (30, 80, 0, 20),
             running_task: "".to_string(),
             unkown_command_help:
                 "Unknown command. To see a list of possible commands, type `help`!".to_string(),
@@ -121,7 +121,7 @@ impl Shell {
                 Color::Black,
             );
             self.parse_command();
-        } else if input == "BACKSPACE"{
+        } else if input == "BACKSPACE" {
             unsafe {
                 if TASK_STARTED != true {
                     if self.current_cursor_position.1 > self.default_cursor_position.1 {
@@ -159,17 +159,21 @@ impl Shell {
     fn parse_command(&mut self) {
         let x = self.input.to_string();
         self.input_history.push(x.clone());
-        if x == "tetris"{
-            {NEW_TASKS
-                .lock()
-                .insert(0, VirtualAddress(tetris as usize));}
-            unsafe { TASK_STARTED = true; }
+        if x == "tetris" {
+            {
+                NEW_TASKS.lock().insert(0, VirtualAddress(tetris as usize));
+            }
+            unsafe {
+                TASK_STARTED = true;
+            }
             self.running_task = "tetris".to_string();
         } else if x == "htop" {
             ;
         } else if x == "help" {
             self.show_shell_manual();
-            unsafe { TASK_STARTED = true; }
+            unsafe {
+                TASK_STARTED = true;
+            }
             self.running_task = "help".to_string();
         } else if x == "clock" {
             {
@@ -247,13 +251,12 @@ impl Shell {
         self.input.clear();
     }
 
-
     /// Prints a description of currently implemented shell commands.
     /// The text is written quick and dirty to free areas on the screen.
     /// A more professional solution would be to write a method which parses a desired textfile
     /// (possibly containing control commands for formatting) and renders the text to a specified
     /// area on the screen.
-    fn show_shell_manual(&mut self){
+    fn show_shell_manual(&mut self) {
         write_at_background(
             "###### RTOS-SHELL - MANUAL ######",
             0,
@@ -266,14 +269,14 @@ impl Shell {
             2,
             35,
             Color::White,
-            Color::Black
+            Color::Black,
         );
         write_at_background(
             "              shell commands",
             3,
             35,
             Color::White,
-            Color::Black
+            Color::Black,
         );
         write_at_background(
             "2. tetris   > Starts a funky tetris game",
@@ -329,7 +332,7 @@ impl Shell {
             16,
             35,
             Color::White,
-            Color::Black
+            Color::Black,
         );
     }
 

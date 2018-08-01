@@ -228,7 +228,11 @@ pub fn schedule(f: &mut ExceptionStackFrame) {
         RUNNING_TASK.lock().instruction_pointer = to_run.instruction_pointer;
         RUNNING_TASK.lock().pid = to_run.pid;
         RUNNING_TASK.lock().sleep_ticks = to_run.sleep_ticks;
-        RUNNING_TASK.lock().time_sleep = tsc as usize - to_run.last_time_stamp;
+        RUNNING_TASK.lock().time_sleep = if (tsc as usize) < to_run.last_time_stamp {
+            0
+        } else {
+            tsc as usize - to_run.last_time_stamp
+        };
         RUNNING_TASK.lock().time_active = to_run.time_active;
         RUNNING_TASK.lock().last_time_stamp = tsc as usize;
     }
