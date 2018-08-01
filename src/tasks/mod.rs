@@ -348,7 +348,9 @@ impl Piece {
                     Color::Red,
                     Color::Black,
                 );
-                unsafe{HIGHSCORE = 0;}
+                unsafe {
+                    HIGHSCORE = 0;
+                }
                 return false;
             }
             self.new_random_piece();
@@ -360,7 +362,9 @@ impl Piece {
                     Color::Red,
                     Color::Black,
                 );
-                unsafe{HIGHSCORE = 0;}
+                unsafe {
+                    HIGHSCORE = 0;
+                }
                 return false;
             }
             BOARD.lock().clear_lines();
@@ -760,6 +764,8 @@ pub fn shell() {
                 msleep(500);
                 SHELL.lock().cursor_off();
                 msleep(500);
+            } else {
+                msleep(100);
             }
         }
     }

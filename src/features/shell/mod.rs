@@ -84,7 +84,6 @@ impl Shell {
         }
     }
 
-
     /// Prints the line which seperates the active screen from the shell area.
     pub fn print_separating_line(&mut self) {
         write_at_background(
@@ -331,7 +330,7 @@ impl Shell {
     /// A more professional solution would be to write a method which parses a desired textfile
     /// (possibly containing control commands for formatting) and renders the text to a specified
     /// area on the screen. Due to lack of time this was not realized any more.
-    fn show_shell_manual(&mut self){
+    fn show_shell_manual(&mut self) {
         write_at_background(
             "###### RTOS-SHELL - MANUAL ######",
             0,
@@ -451,7 +450,6 @@ impl Shell {
             TASK_STARTED = false;
         }
     }
-
 
     /// Called by several shell functions to shift the previous inputs up if the last line of the shell
     /// was reached.
