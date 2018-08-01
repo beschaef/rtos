@@ -6,6 +6,11 @@ install rust from the the homepage
 ```bash
 curl https://sh.rustup-rs -sSf | sh
 ```
+add cargo to PATH variable
+```bash
+echo "export PATH=/home/{USER}/.cargo/bin:\$PATH" >> ~/.bashrc
+```
+restart or source shell
 
 ## clone the rtos repository
 clone the repo
@@ -18,12 +23,33 @@ cd rtos
 ```
 
 ## change the rust toolchain to 1.27.0-nightly
+this may take a while
 ```bash
 rustup override add nightly-2018-04-15
 ```
 
-## compile and run the os
-this could may take while the first time
+## add rust-src as component
 ```bash
-make run
+rustup component add rust-src
+```
+
+## install cargo crates
+this may take a while
+```bash
+cargo install bootimage
+cargo install xargo
+cargo install cargo-xbuild
+```
+
+## install qemu
+install qemu-x86_64 with version 2.5.0
+this may take a while
+```bash
+sudo apt-get install qemu
+```
+
+## compile and run the os
+this may take a while
+```bash
+make all
 ```
