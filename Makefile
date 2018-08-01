@@ -35,6 +35,4 @@ gdb:
 
 # documenting the os. Sometimes the `cargo rustdoc --open` is documenting a second time. Not everything is  documented then.
 doc:
-	rm -rf target/doc/
-	cargo rustdoc -- --document-private-items
-	cargo rustdoc --open
+	cargo rustdoc --open -- --no-defaults --passes collapse-docs --passes unindent-comments --passes strip-priv-imports

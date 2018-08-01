@@ -1,5 +1,3 @@
-//! # Module Scheduler
-//!
 //! This module stores all tasks and handle (schedule) all tasks.
 //! currently this module only supports EDF scheduling.
 //!
@@ -137,10 +135,14 @@ pub fn sched_init(memory_controller: &mut MemoryController) {
 /// used to schedule all tasks.
 /// therefore the function saves the `cpu_flags`, `stack_pointer` and `instruction_pointer` given by
 /// the timer interrupt. The choice for the next Task is seperated in three parts:
+///
 /// 1.) There is a `READY` Task in the `TASKS` vector -> schedule this task next.
+///
 /// 2.) Else, the top task `sleep_ticks` are smaller then the actuall timestamp_counter -> schedule
+///
 /// 3.) Else, no task is ready to run -> schedule `Idle` task, respectively, keep `Idle` as running
 /// if `Idle` was the last running task.
+///
 ///
 /// # Arguments
 /// * `f` - (ExceptionStackFrame) stores the data which are given by an interrupt, in this case by
