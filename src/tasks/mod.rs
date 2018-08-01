@@ -348,10 +348,19 @@ impl Piece {
                     Color::Red,
                     Color::Black,
                 );
+                unsafe{HIGHSCORE = 0;}
                 return false;
             }
             self.new_random_piece();
             if self.collision_test() {
+                vga_buffer::write_at_background(
+                    &format!("- GAME OVER - HS: {} ", unsafe { HIGHSCORE }),
+                    ROW_OFFSET - 2,
+                    COL_OFFSET - 1,
+                    Color::Red,
+                    Color::Black,
+                );
+                unsafe{HIGHSCORE = 0;}
                 return false;
             }
             BOARD.lock().clear_lines();
