@@ -12,7 +12,7 @@ build:
 clean:
 	cargo clean
 	#cargo update //overrides versions of crates and may cause incompatibility issues
-	rm -f logs/TRACE_*
+	rm -rf logs/
 
 # used for formatting rust code
 fmt:
