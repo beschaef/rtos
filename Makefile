@@ -33,6 +33,7 @@ debug:
 gdb:
 	@rust-os-gdb/bin/rust-gdb "target/x86_64-rtos/debug/rtos" -ex "target remote :1234"
 
-# documenting the os. Sometimes the `cargo rustdoc --open` is documenting a second time. Not everything is  documented then.
+# documenting the os. Some of these arguments are depreceted. Actual the new argument `--document-private-items` will cause
+# problems when `cargo rustdoc --open` is called. This will then try to document all stuff new, but without the private items.
 doc:
 	cargo rustdoc --open -- --no-defaults --passes collapse-docs --passes unindent-comments --passes strip-priv-imports
