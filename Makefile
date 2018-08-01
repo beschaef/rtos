@@ -1,10 +1,12 @@
-# Variable to get the current time. This use the shell date function
+# Variable to get the current time. This uses the shell date function
 TIME=$(shell date --iso=seconds)
 
-all:
-	$(MAKE) build
-	$(MAKE) run
+.PHONY: all build clean fmt run debug gdb doc
 
+# rule build and run the system
+all: build run
+
+# rule to build the os
 build:
 	bootimage build
 
@@ -12,15 +14,18 @@ build:
 clean:
 	cargo clean
 	#cargo update //overrides versions of crates and may cause incompatibility issues
-	rm -f logs/TRACE_*
+	rm -rf logs/
 
 # used for formatting rust code
 fmt:
 	cargo fmt
 
+# runs os in qemu
 run:
-	@qemu-system-x86_64 -drive format=raw,file=bootimage.bin -machine q35,iommu=on -smp 4 -d cpu_reset -d guest_errors -m 1024M -cpu host -enable-kvm -serial file:logs/TRACE_$(TIME) -device isa-debug-exit,iobase=0xf4,iosize=0x04
+	@mkdir -p logs
+	@qemu-system-x86_64 -drive format=raw,file=bootimage.bin -m 1024M -cpu host -enable-kvm -serial file:logs/TRACE_$(TIME) -device isa-debug-exit,iobase=0xf4,iosize=0x04 | true
 
+# used for debugging, starting os stopped
 debug:
 	@qemu-system-x86_64 -drive format=raw,file=bootimage.bin -s -S -m 1024M -enable-kvm -serial file:logs/TRACE_$(TIME)
 
@@ -28,7 +33,7 @@ debug:
 gdb:
 	@rust-os-gdb/bin/rust-gdb "target/x86_64-rtos/debug/rtos" -ex "target remote :1234"
 
+# documenting the os. Some of these arguments are depreceted. Actual the new argument `--document-private-items` will cause
+# problems when `cargo rustdoc --open` is called. This will then try to document all stuff new, but without the private items.
 doc:
-	rm -rf target/doc/
-	cargo rustdoc -- --document-private-items
-	cargo rustdoc --open
+	cargo rustdoc --open -- --no-defaults --passes collapse-docs --passes unindent-comments --passes strip-priv-imports

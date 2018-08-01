@@ -22,11 +22,17 @@ struct Trace {
 #[derive(Debug, PartialEq, PartialOrd, Clone, Copy)]
 #[repr(u8)]
 pub enum TraceLevel {
+    /// for debugging informations
     Debug = 0,
+    /// for additional informations
     Info = 1,
+    /// for warnings which needed to trace, but don't will kill the system
     Warn = 2,
+    /// for errors which will kill the system
     Error = 3,
+    /// for fatal errors or important system informations
     Fatal = 4,
+    /// used when noting should be traced
     None = 5,
 }
 
