@@ -1,3 +1,6 @@
+//! This module handles all interrupts. Some parts are taken from the blog-os from phil oppermann.
+//! Excepting the timer and keyboard interrupt, all interrupts are printing the error on the screen
+//! and will then rebooting the system after 5 seconds.
 use features::{active_sleep, reboot};
 use memory::MemoryController;
 use pic::ChainedPics;
@@ -11,6 +14,7 @@ use x86_64::VirtualAddress;
 mod gdt;
 
 lazy_static! {
+    /// Code of the `blog-os by phil oppermann`
     static ref IDT: Idt = {
         let mut idt = Idt::new();
         idt.breakpoint.set_handler_fn(breakpoint_handler);
@@ -52,13 +56,22 @@ lazy_static! {
     };
 }
 
+/// Code of the `blog-os by phil oppermann`
+/// Variable to store the TaskStateSegment
 static TSS: Once<TaskStateSegment> = Once::new();
+
+/// Code of the `blog-os by phil oppermann`
+/// Variable to store the global description table
 static GDT: Once<gdt::Gdt> = Once::new();
 
+/// Code of the `blog-os by phil oppermann`
 const DOUBLE_FAULT_IST_INDEX: usize = 0;
 
+/// Stores PICS to handle interrupts.
+/// Interrupts need to be remapped for the PICS.
 static PICS: Mutex<ChainedPics> = Mutex::new(unsafe { ChainedPics::new(0x20, 0xA0) });
 
+/// Code of the `blog-os by phil oppermann`
 pub fn init(memory_controller: &mut MemoryController) {
     use x86_64::instructions::segmentation::set_cs;
     use x86_64::instructions::tables::load_tss;
@@ -97,6 +110,9 @@ pub fn init(memory_controller: &mut MemoryController) {
     IDT.load();
 }
 
+/// This will initialize a timer which will cause an interrupt.
+/// Actual this needed to be done in inline assembly cause there is no way to it with *normal*
+/// rust code.
 pub fn init_timer() {
     trace_info!("init_timer");
     unsafe {
@@ -256,29 +272,15 @@ pub fn trigger_test_interrupt() {
     println!("Interrupt returned!");
 }
 
+/// Handles timer interrupts.
+/// While handling all interrupts are disabled to prevent errors.
+/// First the scheduler is called to choose a new task.
+/// Then the timer is resetted and the new timer interval is set to 10000 ticks (8.38 ms).
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 extern "x86-interrupt" fn timer_handler(stack_frame: &mut ExceptionStackFrame) {
     //println!("timer_handler");
     unsafe {
         x86_64::instructions::interrupts::disable();
-    }
-    let rax: usize;
-    let rbx: usize;
-    let rdx: usize;
-    let rbp: usize;
-    let rsi: usize;
-    let rdi: usize;
-    let r8: usize;
-    let r9: usize;
-    let r10: usize;
-    let r11: usize;
-    let r12: usize;
-    let r13: usize;
-    let r14: usize;
-    let r15: usize;
-    unsafe {
-        //backup register
-        asm!("":"={rax}"(rax),"={rbx}"(rbx),"={rdx}"(rdx),"={rbp}"(rbp),"={rsi}"(rsi),"={rdi}"(rdi),"={r8}"(r8),"={r9}"(r9),"={r10}"(r10),"={r11}"(r11),"={r12}"(r12),"={r13}"(r13),"={r14}"(r14),"={r15}"(r15):::"intel","volatile");
     }
 
     schedule(stack_frame);
@@ -294,12 +296,7 @@ extern "x86-interrupt" fn timer_handler(stack_frame: &mut ExceptionStackFrame) {
                 out 0x40, al
                 mov al, ch
                 out 0x40, al
-
-
             "::::"intel", "volatile");
-
-        asm!(""::"{rax}"(rax),"{rbx}"(rbx),"{rdx}"(rdx),"{rbp}"(rbp),"{rsi}"(rsi),"{rdi}"(rdi),"{r8}"(r8),"{r9}"(r9),"{r10}"(r10),"{r11}"(r11),"{r12}"(r12),"{r13}"(r13),"{r14}"(r14),"{r15}"(r15):::"intel","volatile");
-
         {
             let mut locked = PICS.try_lock();
             while locked.is_none() {
