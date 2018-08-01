@@ -4,11 +4,11 @@ This installation instruction is written for Ubuntu 16.04. If you are not workin
 ## install rust
 install rust from the the homepage
 ```bash
-curl https://sh.rustup-rs -sSf | sh
+curl https://sh.rustup.rs -sSf | sh
 ```
 add cargo to PATH variable
 ```bash
-echo "export PATH=/home/{USER}/.cargo/bin:\$PATH" >> ~/.bashrc
+echo "source ${HOME}/.cargo/env" >> ~/.bashrc
 ```
 restart or source shell
 
@@ -36,7 +36,7 @@ rustup component add rust-src
 ## install cargo crates
 this may take a while
 ```bash
-cargo install bootimage
+cargo install bootimage --version "0.2.3"
 cargo install xargo
 cargo install cargo-xbuild
 ```
