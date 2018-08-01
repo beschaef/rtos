@@ -802,18 +802,22 @@ pub fn htop() {
     // finish_task();
 }
 
-/// Calculates a float out of two usizes.
+/// Calculates the digits of the percentage ratio of two usize numbers, of which a float can be
+/// built.
 ///
 /// # Arguments
-/// * num - Numerator
-/// * denom - Denominator
-/// * digits - total number of digits of the resulting percent
+/// * `num` - (usize) numerator
+/// * `denom` - (usize) denominator
+/// * `digits` - (usize) total number of digits of the resulting percentage ratio
+///
+/// # Return
+/// * `percent_digits` - (Vec<usize>) resulting digits of percentage ratio
 ///
 /// # Example
-/// * nom - 13
-/// * denom - 37
-/// * digits - 4
-/// the example will return a float with value `0.351`
+/// * nom - 1
+/// * denom - 8
+/// * digits - 3
+/// This example will return a vector [1, 2, 5] (12.5 %)
 fn calc_float_percent_from_int(num: usize, denom: usize, digits: usize) -> Vec<usize> {
     let mut percent_digits: Vec<usize> = Vec::new();
     let mut int = num * 10_usize.pow(digits as u32) / denom;
