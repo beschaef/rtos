@@ -757,9 +757,9 @@ pub fn shell() {
         unsafe {
             if TASK_STARTED != true {
                 SHELL.lock().cursor_on();
-                msleep(1000);
+                msleep(500);
                 SHELL.lock().cursor_off();
-                msleep(1000);
+                msleep(500);
             }
         }
     }
@@ -863,7 +863,7 @@ pub fn task_keyboard() {
                     }
                 }
             }
-            msleep(50);
+            msleep(20);
         }
     }
 }
