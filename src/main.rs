@@ -172,7 +172,9 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
     }
 }
 
+/// defines where the heap starts
 pub const HEAP_START: usize = 0o_000_001_000_000_0000;
+/// defines heap size, actually 300KiB are used
 pub const HEAP_SIZE: usize = 300 * 1024; // 100 KiB
                                          //
                                          //#[global_allocator]
@@ -180,6 +182,8 @@ pub const HEAP_SIZE: usize = 300 * 1024; // 100 KiB
 
 use linked_list_allocator::LockedHeap;
 
+/// defines the global heap allocator. In this system is used the linked list allocator from
+/// phil oppermann.
 #[global_allocator]
 static HEAP_ALLOCATOR: LockedHeap = LockedHeap::empty();
 
