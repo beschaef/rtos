@@ -3,9 +3,7 @@ TIME=$(shell date --iso=seconds)
 
 .PHONY: all build clean fmt run debug gdb doc
 
-all:
-	$(MAKE) build
-	$(MAKE) run
+all: build run
 
 build:
 	bootimage build
