@@ -11,13 +11,18 @@ use x86_64;
 use x86_64::instructions::rdtsc;
 use x86_64::VirtualAddress;
 
+/// Stores the highest process id
 static mut PID_COUNTER: usize = 0;
+
+/// Tells the scheduler if a task was started by the shell
 pub static mut TASK_STARTED: bool = false;
+
+/// Stores the highscore from tetris
 static mut HIGHSCORE: usize = 0;
 
-/// set the width of the playing field
+/// Set the width of the playing field
 const BOARD_WIDTH: u8 = 20;
-/// set the height of the playing field
+/// Set the height of the playing field
 const BOARD_HEIGHT: u8 = 17;
 
 /// Set the y-position of the playing field (distance to left/top corner)
@@ -26,7 +31,7 @@ const ROW_OFFSET: u8 = 2;
 const COL_OFFSET: u8 = 50;
 
 lazy_static! {
-/// The actual falling piece
+/// The current falling piece
     pub static ref PIECE: Mutex<Piece> = Mutex::new(Piece {
         //the previous position of the piece
         oldx: (BOARD_WIDTH / 2) as i8,
@@ -41,13 +46,15 @@ lazy_static! {
         //the current shape
         shape: vec![vec![0]],
     });
-/// Global board, contains the occupied cells
+    /// Global board, contains the occupied cells
     pub static ref BOARD: Mutex<Board> = Mutex::new(Board {
         cells: [[None; BOARD_WIDTH as usize]; BOARD_HEIGHT as usize],
     });
+    /// Vector to store new tasks. New tasks can be started by the shell or other tasks. The main task
+    /// starts new task from this vector.
     pub static ref NEW_TASKS: Mutex<Vec<VirtualAddress>> = Mutex::new(vec![]);
 
-/// global shell object
+    /// Global shell object
     pub static ref SHELL: Mutex<Shell> = Mutex::new(Shell::new((21, 11)));
 }
 
@@ -132,6 +139,11 @@ impl Piece {
         }
     }
 
+    /// Parse arrow keys to control the current falling piece.
+    ///
+    /// # Arguments
+    ///
+    /// * control - string to proof to move / rotate piece
     pub fn parse_control(&mut self, control: String) {
         if control == "ARROW_UP" {
             self.rotate();
@@ -221,7 +233,7 @@ impl Piece {
         }
     }
 
-    /// Rotate the currnet piece counterclockwise
+    /// Rotate the current piece counterclockwise
     pub fn rotate(&mut self) {
         let size = self.shape.len();
 
@@ -347,7 +359,7 @@ impl Piece {
         true
     }
 
-    ///Returns each occupied cell of the shape
+    /// Returns each occupied cell of the shape
     fn each_point(&self, callback: &mut FnMut(i8, i8)) {
         let piece_width = self.shape.len() as i8;
         for row in 0..piece_width {
@@ -359,7 +371,7 @@ impl Piece {
         }
     }
 
-    ///Return each occupied cell of the previous shape
+    /// Return each occupied cell of the previous shape
     fn each_old_point(&self, callback: &mut FnMut(i8, i8)) {
         let piece_width = self.oldshape.len() as i8;
         for row in 0..piece_width {
@@ -465,13 +477,13 @@ impl Board {
 /// Used to represent the actual task status. In this system are used four different status.
 #[derive(Debug, Clone, PartialEq)]
 pub enum TaskStatus {
-    /// used for the idle task
+    /// Used for the idle task
     IDLE,
-    /// used for a new task which never run before
+    /// Used for a new task which never run before
     READY,
-    /// used for all active tasks in the system
+    /// Used for all active tasks in the system
     RUNNING,
-    /// used when a task is terminated to show the scheduler that this task can be removed from the
+    /// Used when a task is terminated to show the scheduler that this task can be removed from the
     /// tasks list.
     FINISHED,
 }
@@ -479,32 +491,42 @@ pub enum TaskStatus {
 /// Stores all relevant data of a task. Each task gets a own `TaskData`.
 #[derive(Debug, Clone)]
 pub struct TaskData {
-    /// for simplification only a char is used to represent the name of the task. Strings are causing
+    /// For simplification only a char is used to represent the name of the task. Strings are causing
     /// problems, due to allocation and ownership.
     pub name: char,
-    /// identification of a task. The main Task starts by `1` each new task will increment this value
+    /// Identification of a task. The main Task starts by `1` each new task will increment this value
     /// by 1.
     pub pid: usize,
-    /// stores the `cpu_flags` for scheduling
+    /// Stores the `cpu_flags` for scheduling
     pub cpu_flags: u64,
-    /// stores the `stack_pointer` for scheduling
+    /// Stores the `stack_pointer` for scheduling
     pub stack_pointer: VirtualAddress,
-    /// stores the `instruction_pointer` for scheduling
+    /// Stores the `instruction_pointer` for scheduling
     pub instruction_pointer: VirtualAddress,
-    /// stores the `TaskStatus` to show the scheduler in which status a task is.
+    /// Stores the `TaskStatus` to show the scheduler in which status a task is.
     pub status: TaskStatus,
-    /// saves a timestamp. The task sleeps until this timestamp.
+    /// Saves a timestamp. The task sleeps until this timestamp.
     pub sleep_ticks: usize,
-    /// used for logging / `htop`. stores the time the task slept.
+    /// Used for logging / `htop`. stores the time the task slept.
     pub time_sleep: usize,
-    /// used for logging / `htop`. stores the time the task was active.
+    /// Used for logging / `htop`. stores the time the task was active.
     pub time_active: usize,
-    /// used for logging / `htop`. stores a delta value for calculation.
+    /// Used for logging / `htop`. stores a delta value for calculation.
     pub last_time_stamp: usize,
 }
 
-///unsafe block is actually safe because we're initializing the tasks before the interrupts are enabled
 impl TaskData {
+    /// Creates a new `TaskData`
+    ///
+    /// # Arguments
+    /// * name - name of the taks. Actual only a char.
+    /// * cpu_flags - saves cpu_flags
+    /// * stack_pointer - saves stack_pointer
+    /// * instruction_pointer - saves instruction_pointer
+    /// * status - saves TaskStatus
+    ///
+    /// # Return
+    /// * TaskData - new created `TaskData`.
     pub fn new(
         name: char,
         cpu_flags: u64,
@@ -526,6 +548,7 @@ impl TaskData {
         }
     }
 
+    /// Copies a `TaskData` and return a new `TaskData` object.
     pub fn copy(
         name: char,
         pid: usize,
@@ -575,7 +598,7 @@ pub fn uptime1() {
     }
 }
 
-/// similar to `uptime1()` but on row 2
+/// Similar to `uptime1()` but on row 2
 pub fn uptime2() {
     msleep(1000);
     trace_info!();
@@ -597,7 +620,7 @@ pub fn uptime2() {
     }
 }
 
-/// similar to `uptime1()` but on row 4
+/// Similar to `uptime1()` but on row 4
 pub fn uptime3() {
     msleep(1000);
     trace_info!();
@@ -619,7 +642,7 @@ pub fn uptime3() {
     }
 }
 
-/// similar to `uptime1()` but on row 6
+/// Similar to `uptime1()` but on row 6
 pub fn uptime4() {
     msleep(1000);
     trace_info!();
@@ -641,7 +664,7 @@ pub fn uptime4() {
     }
 }
 
-/// used to add frequently new temporary clocks. Only use this Function for testing. Otherwise the
+/// Used to add frequently new temporary clocks. Only use this Function for testing. Otherwise the
 /// System will run out of heap, due to allocating frequently new heap.
 #[allow(dead_code)]
 pub fn add_new_temp_clocks() {
@@ -657,7 +680,7 @@ pub fn add_new_temp_clocks() {
     }
 }
 
-/// temporary clock to show that it is possibly to start and stop tasks while the system is running.
+/// Temporary clock to show that it is possibly to start and stop tasks while the system is running.
 /// The clock counts similar to the other clock tasks, but only counts to four.
 pub fn uptime_temp() {
     msleep(1000);
@@ -717,6 +740,7 @@ pub fn tetris() {
     finish_task();
 }
 
+/// Task of the shell
 pub fn shell() {
     msleep(1500);
     SHELL.lock().init_shell();
@@ -778,9 +802,21 @@ pub fn htop() {
     // finish_task();
 }
 
-fn calc_float_percent_from_int(nom: usize, denom: usize, digits: usize) -> Vec<usize> {
+/// Calculates a float out of two usizes.
+///
+/// # Arguments
+/// * num - Numerator
+/// * denom - Denominator
+/// * digits - total number of digits of the resulting percent
+///
+/// # Example
+/// * nom - 13
+/// * denom - 37
+/// * digits - 4
+/// the example will return a float with value `0.351`
+fn calc_float_percent_from_int(num: usize, denom: usize, digits: usize) -> Vec<usize> {
     let mut percent_digits: Vec<usize> = Vec::new();
-    let mut int = nom * 10_usize.pow(digits as u32) / denom;
+    let mut int = num * 10_usize.pow(digits as u32) / denom;
     let mut cnt = digits;
     for _i in 0..digits {
         cnt -= 1;
