@@ -1,3 +1,4 @@
+//! Provides different functions which can't be cleary sorted into a specific module.
 pub mod clock;
 pub mod keyboard;
 pub mod shell;
@@ -209,6 +210,8 @@ pub fn reboot() {
     }
 }
 
+/// Causes the system to shutdown.
+/// Based on https://wiki.osdev.org/Reboot, ACPI reset command
 pub fn shutdown() {
     unsafe { port::outb(0xf4, 0x00) };
 }
