@@ -1,6 +1,8 @@
 # Variable to get the current time. This use the shell date function
 TIME=$(shell date --iso=seconds)
 
+.PHONY: all build clean fmt run debug gdb doc
+
 all:
 	$(MAKE) build
 	$(MAKE) run
