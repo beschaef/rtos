@@ -1,3 +1,10 @@
+//! This module manages everything related to tasks. It provides a common structure for generating new tasks.
+//! The *callback* functions of all scheduled tasks are defined here. So if developers want to enhance the system with
+//! new tasks, the function which is called by the scheduler when executing the task should be defined here.
+//! Specific functions used by a task should be defined in external modules/crates and should only be called from here.
+//! This module contains also some helper functions to manage tasks, e.g. `increment_pid()` or `finish_task()`.
+
+
 use alloc::string::String;
 use alloc::Vec;
 use features::keyboard;
@@ -11,84 +18,84 @@ use x86_64;
 use x86_64::instructions::rdtsc;
 use x86_64::VirtualAddress;
 
-/// Stores the highest process id
+/// Stores the highest process id.
 static mut PID_COUNTER: usize = 0;
 
-/// Tells the scheduler if a task was started by the shell
+/// Tells the scheduler if a task was started by the shell.
 pub static mut TASK_STARTED: bool = false;
 
-/// Stores the highscore from tetris
+/// Stores the highscore from tetris.
 static mut HIGHSCORE: usize = 0;
 
-/// Set the width of the playing field
+/// Sets the width of the tetris playing field.
 const BOARD_WIDTH: u8 = 20;
-/// Set the height of the playing field
+/// Sets the height of the tetris  playing field.
 const BOARD_HEIGHT: u8 = 17;
 
-/// Set the y-position of the playing field (distance to left/top corner)
+/// Sets the y-position of the tetris playing field (distance to left/top corner).
 const ROW_OFFSET: u8 = 2;
-/// Set the x-position of the playing field (distance to left/top corner)
+/// Sets the x-position of the tetris playing field (distance to left/top corner).
 const COL_OFFSET: u8 = 50;
 
 lazy_static! {
-/// The current falling piece
+/// The currently falling piece
     pub static ref PIECE: Mutex<Piece> = Mutex::new(Piece {
-        //the previous position of the piece
+        //The previous position of the piece
         oldx: (BOARD_WIDTH / 2) as i8,
         posx: (BOARD_WIDTH / 2) as i8,
-        //the current position
+        //The current position
         oldy: 0,
         posy: 0,
-        //the color
+        //The color
         color: Color::Green,
-        //the previous shape of the piece
+        //The previous shape of the piece
         oldshape: vec![vec![0]],
-        //the current shape
+        //The current shape of the piece
         shape: vec![vec![0]],
     });
-    /// Global board, contains the occupied cells
+    /// Global board, contains the occupied cells.
     pub static ref BOARD: Mutex<Board> = Mutex::new(Board {
         cells: [[None; BOARD_WIDTH as usize]; BOARD_HEIGHT as usize],
     });
     /// Vector to store new tasks. New tasks can be started by the shell or other tasks. The main task
-    /// starts new task from this vector.
+    /// starts new tasks from this vector.
     pub static ref NEW_TASKS: Mutex<Vec<VirtualAddress>> = Mutex::new(vec![]);
 
-    /// Global shell object
+    /// The global shell object
     pub static ref SHELL: Mutex<Shell> = Mutex::new(Shell::new((21, 11)));
 }
 
-/// Struct of the current falling piece
+/// Struct of the currently falling piece
 pub struct Piece {
-    ///The Color of the specific piece
+    /// The Color of the specific piece
     color: Color,
-    ///The current position of the piece in x-direction
+    /// The current position of the piece in x-direction
     posx: i8,
-    ///The current position of the piece in y-direction
+    /// The current position of the piece in y-direction
     posy: i8,
-    ///The previous position of the piece in x-direction
+    /// The previous position of the piece in x-direction
     oldx: i8,
-    ///The previous position of the piece in y-direction
+    /// The previous position of the piece in y-direction
     oldy: i8,
-    ///The previous shape of the piece
+    /// The previous shape of the piece
     oldshape: Vec<Vec<u8>>,
-    ///The current shape of the piece
+    /// The current shape of the piece
     shape: Vec<Vec<u8>>,
 }
 
 impl Piece {
     /// Change the current piece to a random kind of piece
-    /// and put it at the top of the playing field
+    /// and put it at the top of the playing field.
     pub fn new_random_piece(&mut self) {
         self.oldx = (BOARD_WIDTH / 2) as i8;
         self.posx = (BOARD_WIDTH / 2) as i8;
         self.oldy = 0;
         self.posy = 0;
 
-        // generate random number between 0 and 6
+        // Generate random number between 0 and 6.
         let i = rdtsc() % 7;
 
-        // different piece shapes
+        // Different piece shapes
         match i {
             0 => {
                 self.color = Color::Green;
@@ -139,11 +146,11 @@ impl Piece {
         }
     }
 
-    /// Parse arrow keys to control the current falling piece.
+    /// Parses arrow keys to control the current falling piece.
     ///
     /// # Arguments
     ///
-    /// * control - string to proof to move / rotate piece
+    /// * `control` - (String) Control command
     pub fn parse_control(&mut self, control: String) {
         if control == "ARROW_UP" {
             self.rotate();
@@ -156,7 +163,7 @@ impl Piece {
         }
     }
 
-    /// Prints the current piece
+    /// Prints the currently falling piece.
     pub fn print_piece(&mut self) {
         // delet the previos printed piece
         self.each_old_point(&mut |row, col| {
@@ -171,7 +178,7 @@ impl Piece {
             );
         });
 
-        // prints the current piece
+        // Prints the currently piece.
         self.each_point(&mut |row, col| {
             let posx = self.posx + col;
             let posy = self.posy + row;
@@ -185,18 +192,18 @@ impl Piece {
         });
     }
 
-    /// Check if the piece can move in the given direction.
+    /// Checks if the piece can move in the given direction.
     ///
     /// # Arguments
-    ///   * `x` - moves the piece in to the side. Positive values for right shift, negative values for left shift.
-    ///   * `y` - moves the piece down. Shouldn't be a negative value.
+    ///   * `x` - (i8) Moves the piece to the side. Positive values for right shift, negative values for left shift.
+    ///   * `y` - (i8) Moves the piece down. Shouldn't be a negative value.
     ///
     /// # Return
-    ///  * `false` - if there would be a crash
-    ///  * `true` -  if there wouldn't be a crash. Also moves the current piece.
+    ///  * `false` - (bool) If there would be a crash.
+    ///  * `true` -  (bool) If there wouldn't be a crash. Also moves the current piece.
     ///
     pub fn move_piece(&mut self, x: i8, y: i8) -> bool {
-        // clone the piece
+        // Clone the piece
         let mut new_piece = Piece {
             oldx: self.posx,
             posx: self.posx + x,
@@ -212,7 +219,7 @@ impl Piece {
             new_piece.oldshape.push(row.clone());
         }
 
-        // check if there would be an collision
+        // Checks if there would be a collision.
         if new_piece.collision_test() {
             false
         } else {
@@ -233,11 +240,11 @@ impl Piece {
         }
     }
 
-    /// Rotate the current piece counterclockwise
+    /// Rotates the current piece counterclockwise.
     pub fn rotate(&mut self) {
         let size = self.shape.len();
 
-        // Clone piece
+        //Clone piece
         let mut new_piece = Piece {
             oldx: self.posx,
             posx: self.posx,
@@ -268,9 +275,9 @@ impl Piece {
             }
         }
 
-        // Check if rotation would crash
-        // if it would crash ignore
-        // else rotate the current piece
+        // Check if rotation would crash.
+        // If it would crash ignores,
+        // otherwise rotates the current piece.
         if !new_piece.collision_test() {
             self.oldx = self.posx;
             self.oldy = self.posy;
@@ -294,12 +301,12 @@ impl Piece {
         }
     }
 
-    /// Check if the piece would crash against the boarders of the playing field or against an occupied cell.
+    /// Checks if the piece would crash against the boarders of the playing field or against an occupied cell.
     ///
     /// # Return
     ///
-    ///  * `true` - if there would be a crash.
-    ///  * `false` -  if there wouldn't be a crash.
+    ///  * `true` - (bool) If there would be a crash.
+    ///  * `false` - (bool) If there wouldn't be a crash.
     ///
     pub fn collision_test(&mut self) -> bool {
         let mut found = false;
@@ -318,7 +325,7 @@ impl Piece {
         found
     }
 
-    /// Add the falling piece to the occupied cells
+    /// Add the falling piece to the occupied cells.
     pub fn lock_piece(&mut self) {
         self.each_point(&mut |row, col| {
             let x = self.posx + col;
@@ -327,15 +334,15 @@ impl Piece {
         });
     }
 
-    /// Move the current piece one step down.
-    /// If this is not possible lock the piece and
-    /// create a new random piece at the top of the field
-    /// if this is not possible as well return false
+    /// Moves the current piece one step down.
+    /// If this is not possible, locks the piece and
+    /// creates a new random piece at the top of the field.
+    /// If this is not possible as well, returns false.
     ///
     /// # Return
     ///
-    ///  * `true` - if the piece is moved down or a new piece could be created.
-    ///  * `false` -  if the the piece couldn't move down and no new piece could be created -> Game over.
+    ///  * `true` - (bool) If the piece is moved down or a new piece could be created.
+    ///  * `false` - (bool) If the the piece couldn't be moved down and no new piece could be created -> game over.
     ///
     pub fn advance_game(&mut self) -> bool {
         if !self.move_piece(0, 1) {
@@ -368,7 +375,7 @@ impl Piece {
         true
     }
 
-    /// Returns each occupied cell of the shape
+    /// Returns each occupied cell of the shape.
     fn each_point(&self, callback: &mut FnMut(i8, i8)) {
         let piece_width = self.shape.len() as i8;
         for row in 0..piece_width {
@@ -380,7 +387,7 @@ impl Piece {
         }
     }
 
-    /// Return each occupied cell of the previous shape
+    /// Returns each occupied cell of the previous shape.
     fn each_old_point(&self, callback: &mut FnMut(i8, i8)) {
         let piece_width = self.oldshape.len() as i8;
         for row in 0..piece_width {
@@ -393,13 +400,13 @@ impl Piece {
     }
 }
 
-/// Struct of the global board, contains the occupied cells
+/// Struct of the global board, contains the occupied cells.
 pub struct Board {
     cells: [[Option<Color>; BOARD_WIDTH as usize]; BOARD_HEIGHT as usize],
 }
 
 impl Board {
-    ///Prints the boarders of the playing field
+    /// Prints the boarders of the playing field.
     pub fn render_board(&mut self) {
         self.cells = [[None; BOARD_WIDTH as usize]; BOARD_HEIGHT as usize];
         for y in 0..BOARD_HEIGHT {
@@ -436,7 +443,7 @@ impl Board {
         );
     }
 
-    /// Clears each line that is filled completely
+    /// Clears each line that is filled completely.
     pub fn clear_lines(&mut self) {
         for row_to_check in (0..BOARD_HEIGHT as usize).rev() {
             while !self.cells[row_to_check].iter().any(|x| *x == None) {
@@ -468,7 +475,7 @@ impl Board {
                                 Color::Black,
                             );
                         }
-                        // clear the line above
+                        // Clear the line above
                         vga_buffer::write_at_background(
                             " ",
                             ROW_OFFSET + row as u8 - 1,
@@ -483,59 +490,59 @@ impl Board {
     }
 }
 
-/// Used to represent the actual task status. In this system are used four different status.
+/// Used to represent the current task status. In this system four different status are used.
 #[derive(Debug, Clone, PartialEq)]
 pub enum TaskStatus {
     /// Used for the idle task
     IDLE,
-    /// Used for a new task which never run before
+    /// Used for a new task which has never run before
     READY,
     /// Used for all active tasks in the system
     RUNNING,
     /// Used when a task is terminated to show the scheduler that this task can be removed from the
-    /// tasks list.
+    /// task list.
     FINISHED,
 }
 
-/// Stores all relevant data of a task. Each task gets a own `TaskData`.
+/// Stores all relevant data of a task. Each task gets an own `TaskData`.
 #[derive(Debug, Clone)]
 pub struct TaskData {
     /// For simplification only a char is used to represent the name of the task. Strings are causing
-    /// problems, due to allocation and ownership.
+    /// problems due to allocation and ownership.
     pub name: char,
-    /// Identification of a task. The main Task starts by `1` each new task will increment this value
+    /// Identification of a task. The main Task starts by 1, each new task will increment this value
     /// by 1.
     pub pid: usize,
-    /// Stores the `cpu_flags` for scheduling
+    /// Stores the `cpu_flags` for scheduling.
     pub cpu_flags: u64,
-    /// Stores the `stack_pointer` for scheduling
+    /// Stores the `stack_pointer` for scheduling.
     pub stack_pointer: VirtualAddress,
-    /// Stores the `instruction_pointer` for scheduling
+    /// Stores the `instruction_pointer` for scheduling.
     pub instruction_pointer: VirtualAddress,
-    /// Stores the `TaskStatus` to show the scheduler in which status a task is.
+    /// Stores the `TaskStatus` to show the scheduler the status of a task
     pub status: TaskStatus,
     /// Saves a timestamp. The task sleeps until this timestamp.
     pub sleep_ticks: usize,
-    /// Used for logging / `htop`. stores the time the task slept.
+    /// Used for logging / `htop`. Stores the time the task slept.
     pub time_sleep: usize,
-    /// Used for logging / `htop`. stores the time the task was active.
+    /// Used for logging / `htop`. Stores the time the task was active.
     pub time_active: usize,
-    /// Used for logging / `htop`. stores a delta value for calculation.
+    /// Used for logging / `htop`. Stores a delta value for calculation.
     pub last_time_stamp: usize,
 }
 
 impl TaskData {
-    /// Creates a new `TaskData`
+    /// Creates a new `TaskData`.
     ///
     /// # Arguments
-    /// * name - name of the taks. Actual only a char.
-    /// * cpu_flags - saves cpu_flags
-    /// * stack_pointer - saves stack_pointer
-    /// * instruction_pointer - saves instruction_pointer
-    /// * status - saves TaskStatus
+    /// * `name` - (char) *Name* of the taks. Currently only a char (see description above).
+    /// * `cpu_flags` - (u64) cpu flags.
+    /// * `stack_pointer` - (VirtualAddress)
+    /// * `instruction_pointer` - (VirtualAddress)
+    /// * `status` - (TaskStatus)
     ///
     /// # Return
-    /// * TaskData - new created `TaskData`.
+    /// * TaskData - New created `TaskData`.
     pub fn new(
         name: char,
         cpu_flags: u64,
@@ -557,7 +564,7 @@ impl TaskData {
         }
     }
 
-    /// Copies a `TaskData` and return a new `TaskData` object.
+    /// Copies a `TaskData` and returns a new `TaskData` object.
     pub fn copy(
         name: char,
         pid: usize,
@@ -585,8 +592,8 @@ impl TaskData {
     }
 }
 
-/// Clock which count every second. The clock is starting by 00:00:00 on the top left corner.
-/// This function raises a variable by one each time and then calcute the seconds / minutes / hours.
+/// Clock which counts every second. The clock is starting by 00:00:00 on the top left corner.
+/// This function increments a variable by one each time and then calcutes the seconds / minutes / hours.
 pub fn uptime1() {
     msleep(1000);
     trace_info!();
@@ -607,7 +614,7 @@ pub fn uptime1() {
     }
 }
 
-/// Similar to `uptime1()` but on row 2
+/// Similar to `uptime1()`, but on row 2.
 pub fn uptime2() {
     msleep(1000);
     trace_info!();
@@ -629,7 +636,7 @@ pub fn uptime2() {
     }
 }
 
-/// Similar to `uptime1()` but on row 4
+/// Similar to `uptime1()`, but on row 4.
 pub fn uptime3() {
     msleep(1000);
     trace_info!();
@@ -651,7 +658,7 @@ pub fn uptime3() {
     }
 }
 
-/// Similar to `uptime1()` but on row 6
+/// Similar to `uptime1()`, but on row 6.
 pub fn uptime4() {
     msleep(1000);
     trace_info!();
@@ -673,8 +680,8 @@ pub fn uptime4() {
     }
 }
 
-/// Used to add frequently new temporary clocks. Only use this Function for testing. Otherwise the
-/// System will run out of heap, due to allocating frequently new heap.
+/// Used to add frequently new temporary clocks. Only use this function for testing. Otherwise the
+/// system will run out of heap due to frequently allocatin new heap.
 #[allow(dead_code)]
 pub fn add_new_temp_clocks() {
     msleep(2000);
@@ -690,7 +697,7 @@ pub fn add_new_temp_clocks() {
 }
 
 /// Temporary clock to show that it is possibly to start and stop tasks while the system is running.
-/// The clock counts similar to the other clock tasks, but only counts to four.
+/// The clock counts - similar to the other clock tasks - but only up to 10.
 pub fn uptime_temp() {
     msleep(1000);
     trace_info!();
@@ -714,19 +721,19 @@ pub fn uptime_temp() {
     finish_task();
 }
 
-/// Task of the Tetris Game
+/// Task of the tetris game.
 pub fn tetris() {
     msleep(1000);
     trace_info!();
     let mut gameover = false;
 
-    // print boarders of the playing field
+    // Print boarders of the playing field.
     BOARD.lock().render_board();
 
-    // creat first random piece
+    // Create first random piece
     PIECE.lock().new_random_piece();
 
-    // while the game isnt over
+    // While the game is not over
     while !gameover {
         if SHELL.lock().terminate_running_task == true {
             SHELL.lock().reset_shell();
@@ -735,10 +742,10 @@ pub fn tetris() {
         }
 
         PIECE.lock().print_piece();
-        // new piece every second
+        // New piece every second
         msleep(1000);
 
-        //gameover if the game couldn't be continued
+        // Game over if the game couldn't be continued
         if !PIECE.lock().advance_game() {
             gameover = true;
             msleep(1000);
@@ -749,7 +756,7 @@ pub fn tetris() {
     finish_task();
 }
 
-/// Task of the shell
+/// Task of the shell.
 pub fn shell() {
     msleep(1500);
     SHELL.lock().init_shell();
@@ -766,10 +773,10 @@ pub fn shell() {
     //    finish_task();
 }
 
-/// Task of the htop
-/// prints out all the active tasks and computes their utilization
-/// the utilization results from the active time divided by the active + passive time
-/// the process is looping permanently while the processes are calculated and printed there are no interrupts allowed to avoid concurrency problems
+/// Task of htop.
+/// Prints out all the active tasks and computes their utilization.
+/// The utilization results from the active time divided by the active + passive time.
+/// The process is looping permanently while the processes are calculated and printed. There are no interrupts allowed to avoid concurrency problems
 pub fn htop() {
     trace_info!();
     loop {
@@ -807,7 +814,7 @@ pub fn htop() {
         }
     }
 
-    // end the task, finish_task is unreachable
+    // End the task, finish_task is unreachable
     // finish_task();
 }
 
@@ -815,12 +822,12 @@ pub fn htop() {
 /// built.
 ///
 /// # Arguments
-/// * `num` - (usize) numerator
-/// * `denom` - (usize) denominator
-/// * `digits` - (usize) total number of digits of the resulting percentage ratio
+/// * `num` - (usize) Numerator
+/// * `denom` - (usize) Denominator
+/// * `digits` - (usize) Total number of digits of the resulting percentage ratio
 ///
 /// # Return
-/// * `percent_digits` - (Vec<usize>) resulting digits of percentage ratio
+/// * `percent_digits` - (Vec<usize>) Resulting digits of percentage ratio
 ///
 /// # Example
 /// * nom - 1
@@ -840,13 +847,15 @@ fn calc_float_percent_from_int(num: usize, denom: usize, digits: usize) -> Vec<u
     percent_digits
 }
 
-/// moved keyboard handler from interrupts to own function
+/// Moved keyboard handler from interrupts to own function
 /// keyboard handler as interrupt causes to PIC's deadlock problems.
 /// for now the function polls every 50ms.
 ///
 /// https://wiki.osdev.org/PS/2_Keyboard
 ///
-/// if port `0x64` is 1 there is user input and the function reads on port `0x60` the scancode
+/// If bit 1 of the byte on port `0x64` is set, there is some user input. With bit 5 of this byte one can
+/// distinguish between mouse and keyboard events. Finally the function reads the scancode on port `0x60` to
+/// get the actual input.
 use x86_64::instructions::port;
 pub fn task_keyboard() {
     msleep(1000);
@@ -879,8 +888,8 @@ pub fn idle_task() {
     }
 }
 
-/// Each new Task is getting an unique Process ID. This Function simply count the PID_COUNTER by one
-/// and then return the nur ID.
+/// Each new task is getting an unique process ID. This function simply increments the PID_COUNTER by one
+/// and then returns the new PID.
 fn increment_pid() -> usize {
     unsafe {
         PID_COUNTER += 1;
@@ -888,7 +897,7 @@ fn increment_pid() -> usize {
     }
 }
 
-/// Similar to the `increment_pid` function, this function is raising the tetris highscore by one.
+/// Similar to the function `increment_pid()`, this function increments the tetris highscore by one.
 fn increment_highscore() -> usize {
     unsafe {
         HIGHSCORE += 1;
@@ -896,7 +905,7 @@ fn increment_highscore() -> usize {
     }
 }
 
-/// always called at the end of a function. The running task is marked as finished. After that the
+/// Always called at the end of a task. The running task is marked as finished. After that the
 /// scheduler is called by a timer interrupt.
 fn finish_task() {
     trace_info!("TASK FINISHED");

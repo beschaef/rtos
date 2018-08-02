@@ -1,4 +1,4 @@
-//! code of the `blog-os by phil oppermann`
+//! Code of the `blog-os by phil oppermann`
 use alloc::heap::{Alloc, AllocErr, Layout};
 use core::sync::atomic::{AtomicUsize, Ordering};
 /// A simple allocator that allocates memory linearly and ignores freed memory.

@@ -1,5 +1,5 @@
-//! excluding the function `write_at_background` is everything code of the
-//! `blog-os py phil oppermann`
+//! This module provides an interface for writing to the screen.
+//! Except the function `write_at_background()` this code is a copy of the code from Phil Oppermann.
 use core::fmt::{Arguments, Result, Write};
 use spin::Mutex;
 use volatile::Volatile;
@@ -185,15 +185,15 @@ pub fn write_at(str: &str, row: u8, col: u8, color: Color) {
     write_at_background(str, row, col, color, Color::Black);
 }
 
-/// writes a string on the vga buffer.
-/// This function disables interrupts while printing to prevent vgabuffer errors and bugs.
+/// Writes a string on the vga buffer.
+/// This function disables interrupts while printing to prevent vga buffer errors and bugs.
 ///
 /// # Arguments
-///  * str - which string should be written to vga buffer
-///  * row - which row to print
-///  * col - which collum start to print
-///  * color - text color
-///  * background_color - background color
+///  * `str` - (u8) String that should be written to vga buffer.
+///  * `row` - (u8) Row on which to print.
+///  * `col` - (u8) Column on which to print.
+///  * `color` - (Color) Text color.
+///  * `background_color` - (Color) Background color.
 pub fn write_at_background(str: &str, row: u8, col: u8, color: Color, background_color: Color) {
     unsafe {
         x86_64::instructions::interrupts::disable();
@@ -213,11 +213,11 @@ pub fn clear_screen() {
     WRITER.lock().clear_screen();
 }
 
-/// clears the specified row
+/// Clears the specified row.
 ///
 /// # Arguments
 ///
-/// * row - which row to clear
+/// * `row` - Row to be cleared.
 pub fn clear_row(row: usize) {
     WRITER.lock().clear_row(row);
 }

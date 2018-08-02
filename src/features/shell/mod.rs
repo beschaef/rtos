@@ -25,23 +25,23 @@ use vga_buffer::*;
 use x86_64::VirtualAddress;
 
 pub struct Shell {
-    /// Specifies the initial cursor position (row, col)
+    /// Specifies the initial cursor position (row, col).
     default_cursor_position: (u8, u8),
-    /// Specifies the current cursor position (row, col). Values change during runtime
+    /// Specifies the current cursor position (row, col). Values change during runtime.
     current_cursor_position: (u8, u8),
-    /// Stores the user input from the shell
+    /// Stores the user input from the shell.
     input: String,
-    /// Stores the commands issued from the shell
+    /// Stores the commands issued from the shell.
     input_history: Vec<String>,
-    /// If set to true, the currently running task terminates itself and is not scheduled anymore
+    /// If set to true, the currently running task terminates itself and is not scheduled anymore.
     pub terminate_running_task: bool,
-    /// If set to true, the shell checks whether ctrl + c was pressed
+    /// If set to true, the shell checks whether ctrl + c was pressed.
     parse_ctrl_command: bool,
-    /// Contains the running task (started by the shell) as string
+    /// Contains the running task (started by the shell) as string.
     running_task: String,
-    /// Defines the screen area to which the content of tasks started by the shell is displayed
+    /// Defines the screen area to which the content of tasks started by the shell is displayed.
     active_screen: (u8, u8, u8, u8),
-    /// Text, which is displayed when the user issues an unsupported command
+    /// Text, which is displayed when the user issues an unsupported command.
     unkown_command_help: String,
 }
 
@@ -49,7 +49,7 @@ impl Shell {
     /// Creates a new shell and sets some default default values.
     /// # Arguments
     /// * `current_cursor_position` - ((u8, u8)) Specifies the initial cursor position (row, col)
-    /// and therewith defines the number of lines occupied by the shell
+    /// and therewith defines the number of lines occupied by the shell.
     #[allow(dead_code)]
     pub fn new(current_cursor_position: (u8, u8)) -> Self {
         Shell {

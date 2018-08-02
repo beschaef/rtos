@@ -1,5 +1,5 @@
-//! This module is used to trace informations. All data is written to port `0x03f8`.
-//! It's possible to trace five different level of tracing. `Debug`, `Info`, `Warn`, `Error`,
+//! This module is used to trace information. All data is written to port `0x03f8`.
+//! It's possible to use five different level of tracing: `Debug`, `Info`, `Warn`, `Error`,
 //! `Fatal`, and `None`.
 //! If the Trace level is set to `None`, nothing is traced.
 //! For easier usage there are different macros for each trace level.
@@ -9,53 +9,53 @@ use spin::Mutex;
 use x86_64;
 use x86_64::instructions::rdtsc;
 
-/// the serial port to write is fix, so there is no need to store any data in the struct.
+/// The serial port to write is fix, so there is no need to store any data in the struct.
 struct Trace {
     //port: cpuio::UnsafePort,
 }
 
-/// Same Level as the ROS (Robot Operating System) Log level.
-/// Debug to Fatal are used to Trace different Types.
-/// If Trace Level is set to None no Traces are written.
-/// The smaller the Tracelevel is the more Infos are traced.
+/// The same level as the ROS (Robot Operating System) log levels.
+/// Debug to *Fatal* are used to trace different types.
+/// If the trace level is set to *None*, no traces are written.
+/// The *smaller* the trace level, the more information is traced.
 #[allow(dead_code)]
 #[derive(Debug, PartialEq, PartialOrd, Clone, Copy)]
 #[repr(u8)]
 pub enum TraceLevel {
-    /// for debugging informations
+    /// For debugging information.
     Debug = 0,
-    /// for additional informations
+    /// For additional information.
     Info = 1,
-    /// for warnings which needed to trace, but don't will kill the system
+    /// For warnings which are needed to trace, but won't kill the system.
     Warn = 2,
-    /// for errors which will kill the system
+    /// For errors which will kill the system.
     Error = 3,
-    /// for fatal errors or important system informations
+    /// For fatal errors or important system information.
     Fatal = 4,
-    /// used when noting should be traced
+    /// Used when nothing should be traced.
     None = 5,
 }
 
-/// Global Variable to store the actual Trace level.
+/// Global variable to store the trace level.
 pub static mut TRACE_LEVEL: TraceLevel = TraceLevel::Info;
 
 lazy_static! {
-    /// Global Trace struct, saved with a Mutex, to use it in all Files and to
-    /// pretend race conditions or similar multi access problems.
+    /// Global Trace struct, guarded by a Mutex, to use it in all files and to
+    /// prevent race conditions or similar multi-access problems.
     static ref TRACE: Mutex<Trace> = Mutex::new(Trace {});
 }
 
 impl Trace {
-    /// This function builds a string with the arguments and writes then all bytes on Port `0x03f8`.
+    /// This function builds a string with the arguments and then writes all bytes on Port `0x03f8`.
     ///
     /// # Output example
     ///
     /// Info: module:function_name - tsc: 1234567890 - Some additional info text
     ///
     /// # Arguments
-    /// * `level` - writes trace level ('Info' in example).
-    /// * `fn_name` - writes function name ('module:function_name' in example)
-    /// * `info_text` - writes additional info ('Some additional info text' in example).
+    /// * `level` - (&str) Trace level ('Info' in the example).
+    /// * `fn_name` - (&str) Function name ('module:function_name' in the  example)
+    /// * `info_text` - (&str) Additional info ('Some additional info text' in the example).
     pub fn write(&mut self, level: &str, fn_name: &str, info_text: &str) {
         let ts = rdtsc();
         for x in format!(
@@ -70,12 +70,12 @@ impl Trace {
     }
 }
 
-/// writes a trace with disabled interrupts.
+/// Writes a trace with disabled interrupts.
 ///
 /// # Arguments
-/// * `level` - writes trace level ('Info' in example).
-/// * `fn_name` - writes function name ('module:function_name' in example)
-/// * `info_text` - writes additional info ('Some additional info text' in example).
+/// * `level` - (&str) Trace level ('Info' in the example).
+/// * `fn_name` - (&str) Function name ('module:function_name' in the  example)
+/// * `info_text` - (&str) Additional info ('Some additional info text' in the example).
 pub fn trace_info(level: &str, fn_name: &str, info_text: &str) {
     unsafe {
         x86_64::instructions::interrupts::disable();
@@ -84,12 +84,12 @@ pub fn trace_info(level: &str, fn_name: &str, info_text: &str) {
     }
 }
 
-/// writes a trace with given arguments.
+/// Writes a trace with given arguments.
 ///
 /// # Arguments
-/// * `level` - writes trace level ('Info' in example).
-/// * `fn_name` - writes function name ('module:function_name' in example)
-/// * `info_text` - writes additional info ('Some additional info text' in example).
+/// * `level` - (&str) Trace level ('Info' in the example).
+/// * `fn_name` - (&str) Function name ('module:function_name' in the  example)
+/// * `info_text` - (&str) Additional info ('Some additional info text' in the example).
 pub fn trace_info_without_interrupts(level: &str, fn_name: &str, info_text: &str) {
     let lock = TRACE.try_lock();
     if lock.is_some() {
@@ -98,18 +98,18 @@ pub fn trace_info_without_interrupts(level: &str, fn_name: &str, info_text: &str
     }
 }
 
-/// traces a given message when trace level is set to `Debug`
+/// Traces a given message when trace level is set to `Debug`.
 ///
 /// # Output example
 ///
 /// Debug: module:function_name - tsc: 1234567890 - Some debug info
 ///
 /// # Examples
-/// trace_fatal!();
+/// trace_debug!();
 ///
-/// trace_fatal!("Some debug info");
+/// trace_debug!("Some debug info");
 ///
-/// trace_fatal!("Some {} info", "debug");
+/// trace_debug!("Some {} info", "debug");
 ///
 #[macro_export]
 macro_rules! trace_debug {
@@ -136,18 +136,18 @@ macro_rules! trace_debug {
     };
 }
 
-/// traces a given message when trace level is set to `Info` or `Debug`
+/// Traces a given message when trace level is set to `Info` or `Debug`.
 ///
 /// # Output example
 ///
-/// Info: module:function_name - tsc: 1234567890 - Awesome stuff is happend
+/// Info: module:function_name - tsc: 1234567890 - Awesome stuff has happened
 ///
 /// # Examples
-/// trace_fatal!();
+/// trace_info!();
 ///
-/// trace_fatal!("Awesome stuff is happend");
+/// trace_info!("Awesome stuff has happened");
 ///
-/// trace_fatal!("Awesome stuff is {}", "happend");
+/// trace_info!("Awesome stuff has {}", "happened");
 ///
 #[macro_export]
 macro_rules! trace_info {
@@ -174,18 +174,18 @@ macro_rules! trace_info {
     };
 }
 
-/// traces a given message when trace level is set to `Warn`, `Info` or `Debug`
+/// Traces a given message when trace level is set to `Warn`, `Info` or `Debug`.
 ///
 /// # Output example
 ///
-/// Warn: module:function_name - tsc: 1234567890 - Something happend
+/// Warn: module:function_name - tsc: 1234567890 - Something happened
 ///
 /// # Examples
-/// trace_fatal!();
+/// trace_warn!();
 ///
-/// trace_fatal!("Something happend");
+/// trace_warn!("Something happened");
 ///
-/// trace_fatal!("Something {}", "happend");
+/// trace_warn!("Something {}", "happened");
 ///
 #[macro_export]
 macro_rules! trace_warn {
@@ -212,18 +212,18 @@ macro_rules! trace_warn {
     };
 }
 
-/// traces a given message when trace level is set to `Error`, `Warn`, `Info` or `Debug`
+/// Traces a given message when trace level is set to `Error`, `Warn`, `Info` or `Debug`.
 ///
 /// # Output example
 ///
-/// Error: module:function_name - tsc: 1234567890 - Something bad happend
+/// Error: module:function_name - tsc: 1234567890 - Something bad happened
 ///
 /// # Examples
-/// trace_fatal!();
+/// trace_error!();
 ///
-/// trace_fatal!("Something bad happend");
+/// trace_error!("Something bad happend");
 ///
-/// trace_fatal!("Something {} happend", "bad");
+/// trace_error!("Something {} happened", "bad");
 ///
 #[macro_export]
 macro_rules! trace_error {
@@ -250,18 +250,18 @@ macro_rules! trace_error {
     };
 }
 
-/// traces a given message when trace level is set to `Fatal`, `Error`, `Warn`, `Info` or `Debug`
+/// Traces a given message when trace level is set to `Fatal`, `Error`, `Warn`, `Info` or `Debug`.
 ///
 /// # Output example
 ///
-/// Fatal: module:function_name - tsc: 1234567890 - Something really bad happend
+/// Fatal: module:function_name - tsc: 1234567890 - Something really bad happened
 ///
 /// # Examples
 /// trace_fatal!();
 ///
-/// trace_fatal!("Something really bad happend");
+/// trace_fatal!("Something really bad happened");
 ///
-/// trace_fatal!("Something really {} happend", "bad");
+/// trace_fatal!("Something really {} happened", "bad");
 ///
 #[macro_export]
 macro_rules! trace_fatal {
@@ -288,7 +288,7 @@ macro_rules! trace_fatal {
     };
 }
 
-/// traces a given message by using the trace::trace_info() function
+/// Traces a given message by using the trace::trace_info() function.
 ///
 /// # Examples
 /// simple_trace!("Debug", "Some info Text");
@@ -297,14 +297,14 @@ macro_rules! simple_trace {
     ($a:expr, $($arg:tt)*) => ($crate::trace::trace_info(&format!($a), function!(),&format!($($arg)*)));
 }
 
-/// traces a given message by using the trace::trace_info_without_interrupts() function
+/// Traces a given message by using the function `trace::trace_info_without_interrupts()`.
 ///
 /// # Examples
 /// early_trace!();
 ///
-/// early_trace!("Some info Text");
+/// early_trace!("Some info text");
 ///
-/// early_trace!("Some info {}", "Text");
+/// early_trace!("Some info {}", "text");
 ///
 #[allow(dead_code)]
 #[macro_export]
@@ -315,7 +315,7 @@ macro_rules! early_trace {
 
 }
 
-/// changes the trace level
+/// Changes the trace level.
 ///
 /// # Examples
 /// set_trace_level!(TraceLevel::Warn);
@@ -333,7 +333,7 @@ macro_rules! set_trace_level {
     };
 }
 
-/// returns the function and module from where it's called.
+/// Returns the function name and the corresponding module name.
 ///
 /// # Examples
 /// mod foo {

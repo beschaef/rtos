@@ -1,4 +1,4 @@
-//! Provides different functions which can't be cleary sorted into a specific module.
+//! Provides different helper functions which can't be assigned to a specific module.
 pub mod clock;
 pub mod keyboard;
 pub mod shell;
@@ -8,16 +8,16 @@ use scheduler::RUNNING_TASK;
 use x86_64;
 use x86_64::instructions::{port, rdtsc};
 
-/// global variable to store the cpu frequency
+/// Global variable to store the cpu frequency.
 static mut CPU_FREQ: u64 = 0;
 
-/// With pit and tsc the cpu frequency is calculated. To prevent interrupt issues, all intterrupts are
-/// disabled during the calulation. Currently there is no `rust-way` to initialize and modify the pit. Therefore
-/// the function is using inline assembly to initialize the pit.
-/// To calculate the frequency the current pit and tsc are read two times with a minimum difference of 40 pit ticks.
-/// After that the difference of both timer is taken and then the quotient is taken.
-/// For a better estimate the steps are repeated 5 times.
-/// The last step is to multiply the result value with the pit frequency(1.193MHz) to get the cpu frequency.
+/// With pit and tsc the cpu frequency is calculated. To prevent interrupt issues, all interrupts are
+/// disabled during the calulation. Currently there is no *rust-way* to initialize and modify the pit. Therefore
+/// the function is using inline assembly to initialize it.
+/// To calculate the frequency, the current pit and tsc are read two times with a minimum difference of 40 pit ticks.
+/// After that the difference of both timers is taken and then the quotient is calculated.
+/// For a better estimatation the steps are repeated five times.
+/// The last step is to multiply the result value with the pit frequency(1.193 MHz) to get the cpu frequency.
 pub fn calc_freq() -> u64 {
     unsafe {
         x86_64::instructions::interrupts::disable();
@@ -71,8 +71,8 @@ pub fn calc_freq() -> u64 {
     return (r0 / f0 * pit_freq) as u64;
 }
 
-/// Currently there is no `rust-way` to get the remaining pit-ticks. Therefore the function use
-/// inline assembly to get the remaining pit-ticks.
+/// Currently there is no *rust-way* to get the remaining pit ticks. Therefore the function uses
+/// inline assembly to get the remaining pit ticks.
 fn read_pit() -> u64 {
     let reg: u64;
     unsafe {
@@ -91,21 +91,23 @@ fn read_pit() -> u64 {
     return reg;
 }
 
-/// There are three Ways to get the CPU frequency in a bare-bone system.
-/// This function trys all three ways and take the first which is working.
-/// The first way is to get it directly out of the registry. For this there is the Crate `raw_cpuid`
-/// which provides a lot of functions. In this case the two functions `get_processor_frequency_info()`
-/// and `info.processor_base_frequency()` are used to get the frequency. This is not working in all
-/// ways, i.e. in qemu the function return 0. On the other hand, when the system is loaded on an
-/// usb-stick and booted directly the function returned the frequency on the tested systems.
+/// There are three ways to get the CPU frequency in a bare-bone system.
+/// This function tries all three ways and takes the first which is working.
 ///
-/// The second wys is also with the `raw_cpuid` Crate . Most systems are returning there processor
-/// brand with the `processor_brand_string()` function which is also in the `raw_cpuid` crate.
-/// The string includes the frequency in GHz. A tested computer returned
-/// `Intel(R) Core(TM) i3-4010U CPU @ 1.70GHz` for example. To get the frequency the function is
-/// looking for the substring ` @ ` and then convert the followed 'string numbers' into numbers.
-/// If the Processor Brand is also empty it is possible to calculate the frequency. The calculation
-/// is never exact, so this is the last way to get the frequency. The calculation is described in
+/// The first way is to get it directly out of the registry. For this there is the crate `raw_cpuid`
+/// which provides a lot of functions. In this case the two functions `get_processor_frequency_info()`
+/// and `processor_base_frequency()` are used to get the frequency. This is not working in all
+/// ways, i.e. in qemu the function returns 0. On the other hand, when the system is loaded on an
+/// usb stick and booted directly, the function returned the frequency on all tested systems.
+///
+/// The second way also uses the crate`raw_cpuid`. Most systems are returning their processor
+/// brand when using the function `processor_brand_string()`.
+/// The string includes the frequency in GHz. For example, one tested computer returned
+/// `Intel(R) Core(TM) i3-4010U CPU @ 1.70GHz`. To get the frequency the function is
+/// looking for the substring ` @ ` and then converts the following 'string numbers' into numbers.
+///
+/// If the processor brand also is empty, it is possible to calculate / approximate the frequency.
+/// This approximation is never really precise, so this is the last way to get the frequency. The calculation is described in
 /// `features::calc_freq()`
 pub fn get_cpu_freq() -> u64 {
     let cpuid = CpuId::new();
@@ -164,9 +166,9 @@ pub fn get_cpu_freq() -> u64 {
     }
 }
 
-/// The function calculates how many tsc ticks the current process has to sleep in dependent on the
+/// The function calculates how many tsc ticks the current process has to sleep, dependent on the
 /// given time in milliseconds. After this the function saves the `sleep_ticks` in the `RUNNING_TASK`
-/// struct. To prevent CPU wasting the timer interrupt is called an thus the scheduler is called.
+/// struct. To prevent CPU waste, the timer interrupt is called and thus the scheduler is called.
 pub fn msleep(ms: u64) {
     trace_info!();
     let one_sec = get_cpu_freq();
@@ -197,7 +199,7 @@ pub fn active_sleep(ms: u64) {
 }
 
 /// Causes the system to reboot.
-/// Based on https://wiki.osdev.org/Reboot, ACPI reset command
+/// Based on [OSDev Wiki](https://wiki.osdev.org/Reboot).
 pub fn reboot() {
     let mut good = 0x02;
     while good & 0x02 == 1 {
@@ -211,7 +213,7 @@ pub fn reboot() {
 }
 
 /// Causes the system to shutdown.
-/// Based on https://wiki.osdev.org/Reboot, ACPI reset command
+/// Based on [OSDev Wiki](https://wiki.osdev.org/Reboot).
 pub fn shutdown() {
     unsafe { port::outb(0xf4, 0x00) };
 }
@@ -221,8 +223,8 @@ pub fn test_bit(byte: u8, bit: u8) -> bool {
     byte & bit > 0
 }
 
-/// disables the cursor on vga_buffer
-/// More infos at https://wiki.osdev.org/Text_Mode_Cursor#Disabling_the_Cursor
+/// Disables the cursor on the vga_buffer.
+/// More information at [OSDev Wiki](https://wiki.osdev.org/Text_Mode_Cursor#Disabling_the_Cursor).
 pub fn disable_cursor() {
     unsafe {
         port::outb(0x3D4, 0x0A);

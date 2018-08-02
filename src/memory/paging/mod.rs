@@ -1,4 +1,4 @@
-//! code of the `blog-os by phil oppermann`
+//! Code of the `blog-os by phil oppermann`
 pub use self::entry::*;
 pub use self::mapper::Mapper;
 use self::temporary_page::TemporaryPage;

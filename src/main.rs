@@ -1,14 +1,14 @@
-//! This Operation System is based on the blog posts by phil oppermann.
-//! While this os was programmed the second edition was not finished. So the system is using all
-//! new stuff of the second edition which was ready. The rest which was needed are taken from the
-//! first edition of the blog posts.
+//! This Operation System is based on the [blog posts by Phil Oppermann](https://os.phil-opp.com/),
+//! which consists of two separate editions. While this OS was programmed, the second edition was not
+//! finished yet. So the system is using all the *new stuff* of the second edition which was ready.
+//! The neccessary residual things were taken from the first edition of the blog posts.
 //!
 //! There are still some very very rare bugs.
 //! It can happen that the scheduler is called before the tasks are initialzed. This causes a panic
 //! and the system dies.
 //!
-//! There are also very rarely `Page Faults` which are not clear where they came from. This is hard
-//! to debug, because the `gdb` debugger will cause other faults when trying to debug.
+//! There are also very rarely `Page Faults` whose reasons are not 100% clarified.
+//! They're hard to debug, because the `gdb` debugger causes other faults when trying to debug.
 //!
 #![feature(lang_items)]
 #![no_std]
@@ -62,8 +62,7 @@ use os_bootinfo::BootInfo;
 use raw_cpuid::CpuId;
 use tasks::{tetris, uptime_temp};
 
-/// Used when a panic occour. The function prints the file and the line on the screen when a panic
-/// occur.
+/// Used when a panic occurs. The function prints the file and the line on the screen if a panic happens.
 #[lang = "panic_fmt"]
 #[no_mangle]
 pub extern "C" fn rust_begin_panic(
@@ -80,19 +79,18 @@ pub extern "C" fn rust_begin_panic(
 
 /// This is the function for the entry point of the system.
 /// Here the system gets initialized.
-/// For a system with multiple tasks with a scheduler it is important to have a memory_controller to
-/// allocate stack for each task. To handle strings, Vec, etc. a heap allocator is needed. This
-/// system is using a linked list heap alloctor. Actually its only possible to allocate heap and stack.
-/// So it is important to reuse as much Variables as possible.
+/// For a system with multiple tasks with a scheduler it is important to have a `memory_controller` to
+/// allocate stack for each task. To handle strings, Vecs, etc. a heap allocator is needed. Therefore this
+/// system is using a *linked list heap alloctor*. Actually it's only possible to allocate heap and stack.
+/// So it is important to reuse as much variables as possible.
 ///
-/// We decided to continue using the memory_controller in the main task, because this is not global
-/// in the current version. Although it is possible to pass the memory_controller to a function, but
+/// We decided to continue using the `memory_controller` in the main task, because this is not global
+/// in the current version. Indeed it is possible to pass the `memory_controller` to a function, but
 /// it is not possible to use it in a new task.
 ///
-/// To start additional tasks in the running system, they must be added to the vector NEW_TASKS.
-/// The main task looks every 200ms for new tasks in the vector. If there is a new task, it is
-/// allocated for this new memory and then pushed to the TASKS vector, which the scheduler uses.
-///
+/// To start additional tasks in the running system, they must be added to the vector `NEW_TASKS`.
+/// The main task looks every 200ms for new tasks in the vector. If there is a new task, some memory
+/// is allocated and then the task is pushed to the TASKS vector, which is then used by the scheduler.
 #[no_mangle]
 pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
     boot_info
@@ -172,22 +170,22 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
     }
 }
 
-/// defines where the heap starts
+/// Defines where the heap starts.
 pub const HEAP_START: usize = 0o_000_001_000_000_0000;
-/// defines heap size, actually 300KiB are used
-pub const HEAP_SIZE: usize = 300 * 1024; // 100 KiB
+/// Defines the heap size. Currently 300 KiB are used.
+pub const HEAP_SIZE: usize = 300 * 1024; // 300 KiB
                                          //
-                                         //#[global_allocator]
-                                         //static HEAP_ALLOCATOR: BumpAllocator = BumpAllocator::new(HEAP_START, HEAP_START + HEAP_SIZE);
+//#[global_allocator]
+//static HEAP_ALLOCATOR: BumpAllocator = BumpAllocator::new(HEAP_START, HEAP_START + HEAP_SIZE);
 
 use linked_list_allocator::LockedHeap;
 
-/// defines the global heap allocator. In this system is used the linked list allocator from
-/// phil oppermann.
+/// Defines the global heap allocator. This system uses the linked list allocator from
+/// Phil Oppermann.
 #[global_allocator]
 static HEAP_ALLOCATOR: LockedHeap = LockedHeap::empty();
 
-/// prints a welcome message on the screen
+/// Prints a welcome message on the screen.
 fn print_welcome(vendor_info: String, brand_info: String) {
     println!(" #     #                                                           ");
     println!(" #  #  # ###### #       ####   ####  #    # ######    #####  ####  ");
@@ -216,7 +214,7 @@ fn print_welcome(vendor_info: String, brand_info: String) {
     }
 }
 
-/// prints booting information to the screen
+/// Prints some booting information to the screen.
 fn print_booting() {
     println!(" #######                   #####");
     println!("    #    #    # ######    #     # #   #  ####  ##### ###### #    #");

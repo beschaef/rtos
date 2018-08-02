@@ -1,16 +1,12 @@
-//! stores the keyboard decode function
+//! Stores the keyboard decode function.
 use alloc::string::String;
 use alloc::string::ToString;
 
 /// Decode a code in the PS/2 scan code set 1 (legacy set).
 ///
-/// Difference between set 1 and sets 2 & 3:
-///   http://wiki.osdev.org/%228042%22_PS/2_Controller#Translation
+/// [Difference between set 1 and sets 2 & 3](http://wiki.osdev.org/%228042%22_PS/2_Controller#Translation)
 ///
-/// Reference table:
-///   http://www.computer-engineering.org/ps2keyboard/scancodes1.html
-///
-/// The arrow keys are used to play tetris.
+/// [Reference table](http://www.computer-engineering.org/ps2keyboard/scancodes1.html)
 pub fn from_scancode(code: usize) -> Option<String> {
     let printable = match code {
         0x1e => "a",

@@ -1,4 +1,4 @@
-//! code of the `blog-os by phil oppermann`
+//! Code of the `blog-os by phil oppermann`
 use core::marker::PhantomData;
 use core::ops::{Index, IndexMut};
 use memory::paging::entry::*;

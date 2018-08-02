@@ -1,4 +1,4 @@
-//! code of the `blog-os by phil oppermann`
+//! Code of the `blog-os by phil oppermann`
 pub use self::area_frame_allocator::AreaFrameAllocator;
 use self::paging::PhysicalAddress;
 pub use self::stack_allocator::Stack;

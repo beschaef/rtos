@@ -1,6 +1,6 @@
-//! This module handles all interrupts. Some parts are taken from the blog-os from phil oppermann.
-//! Excepting the timer and keyboard interrupt, all interrupts are printing the error on the screen
-//! and will then rebooting the system after 5 seconds.
+//! This module handles all interrupts. Some parts are taken from the blog-os by Phil Oppermann.
+//! Except the timer and keyboard interrupt, all interrupts are printing the error on the screen
+//! and will then reboot the system after 5 seconds.
 use features::{active_sleep, reboot};
 use memory::MemoryController;
 use pic::ChainedPics;
@@ -111,7 +111,7 @@ pub fn init(memory_controller: &mut MemoryController) {
 }
 
 /// This will initialize a timer which will cause an interrupt.
-/// Actual this needed to be done in inline assembly cause there is no way to it with *normal*
+/// Currently this is needed to be done with inline assembly because there is no way to realize it with *normal*
 /// rust code.
 pub fn init_timer() {
     trace_info!("init_timer");
@@ -273,9 +273,9 @@ pub fn trigger_test_interrupt() {
 }
 
 /// Handles timer interrupts.
-/// While handling all interrupts are disabled to prevent errors.
-/// First the scheduler is called to choose a new task.
-/// Then the timer is resetted and the new timer interval is set to 10000 ticks (8.38 ms).
+/// All interrupts are disabled to prevent errors.
+/// First the scheduler is called to choose a new task,
+/// then the timer is resetted and the new timer interval is set to 10000 ticks (8.38 ms).
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 extern "x86-interrupt" fn timer_handler(stack_frame: &mut ExceptionStackFrame) {
     //println!("timer_handler");
